@@ -155,7 +155,7 @@ export function LandingPage() {
                       Sign In
                     </Link>
                     <Link to="/register" className="saas-btn saas-btn-primary">
-                      <span>Get Started</span>
+                      <span>Register</span>
                       <ArrowRight size={14} />
                     </Link>
                   </>

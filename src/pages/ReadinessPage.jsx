@@ -205,22 +205,6 @@ export function ReadinessPage() {
             <span>Roadmap Progress</span>
             <strong>{preparation.completedTopics} / {preparation.totalTopics}</strong>
           </div>
-          <div className="readiness-header-stat-item">
-            <span>Tests Submitted</span>
-            <strong>{mockPerformance.testsCompleted}</strong>
-          </div>
-          <div className="readiness-header-stat-item">
-            <span>Exam Accuracy</span>
-            <strong style={{ color: (mockPerformance.examAccuracyPercentage || 0) >= 60 ? '#16a34a' : '#d97706' }}>
-              {mockPerformance.examAccuracyPercentage !== null ? `${mockPerformance.examAccuracyPercentage}%` : 'Pending'}
-            </strong>
-          </div>
-          {mockPerformance.negativeMarksLost > 0 && (
-            <div className="readiness-header-stat-item" style={{ borderColor: '#fed7aa', background: '#fff7ed' }}>
-              <span style={{ color: '#ea580c' }}>Penalty Incurred</span>
-              <strong style={{ color: '#c2410c' }}>-{mockPerformance.negativeMarksLost} marks</strong>
-            </div>
-          )}
           <Link to="/companies" className="button secondary" style={{ fontSize: '12px', height: 'fit-content' }}>
             <Building2 size={13} /> Change Target
           </Link>

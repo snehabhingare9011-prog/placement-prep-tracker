@@ -285,10 +285,11 @@
    ========================================================================== */
 
 .saas-hero-section {
-  padding: 64px 0 52px;
-  background: radial-gradient(ellipse 70% 45% at 50% -8%, rgba(219, 234, 254, 0.6) 0%, rgba(239, 246, 255, 0.2) 50%, transparent 80%), #ffffff;
+  padding: 72px 0 76px;
+  background: radial-gradient(ellipse 70% 50% at 50% -8%, rgba(219, 234, 254, 0.6) 0%, rgba(239, 246, 255, 0.2) 50%, transparent 80%), #ffffff;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .saas-hero-content {

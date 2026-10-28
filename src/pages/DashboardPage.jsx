@@ -672,10 +672,17 @@ export function DashboardPage() {
                     <article
                       key={test._id}
                       className="mock-test-card"
-                      style={{ borderColor: isExactTargetMatch ? '#bfdbfe' : '#e2e8f0', margin: 0, padding: '14px' }}
+                      style={{
+                        borderColor: isExactTargetMatch ? '#bfdbfe' : '#e2e8f0',
+                        margin: 0,
+                        padding: '16px 18px',
+                        borderRadius: '10px',
+                        background: '#ffffff',
+                        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                      }}
                     >
-                      <div className="test-card-header" style={{ marginBottom: '8px' }}>
-                        <div className="test-badge-row">
+                      <div className="test-card-header" style={{ marginBottom: '10px' }}>
+                        <div className="test-badge-row" style={{ gap: '6px' }}>
                           {isExactTargetMatch ? (
                             <span style={{
                               display: 'inline-flex',
@@ -684,24 +691,24 @@ export function DashboardPage() {
                               background: '#eff6ff',
                               color: '#2563eb',
                               border: '1px solid #bfdbfe',
-                              padding: '1px 6px',
-                              borderRadius: '4px',
-                              fontSize: '10px',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
                               fontWeight: 700
                             }}>
-                              <Sparkles size={10} /> Target Match
+                              <Sparkles size={11} /> Target Match
                             </span>
                           ) : test.company ? (
                             <span style={{
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
-                              background: '#f1f5f9',
+                              background: '#f8fafc',
                               color: '#334155',
-                              border: '1px solid #cbd5e1',
-                              padding: '1px 6px',
-                              borderRadius: '4px',
-                              fontSize: '10px',
+                              border: '1px solid #e2e8f0',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
                               fontWeight: 600
                             }}>
                               {test.role || activeCo.name}
@@ -711,59 +718,103 @@ export function DashboardPage() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
-                              background: '#f1f5f9',
+                              background: '#f8fafc',
                               color: '#334155',
-                              border: '1px solid #cbd5e1',
-                              padding: '1px 6px',
-                              borderRadius: '4px',
-                              fontSize: '10px',
+                              border: '1px solid #e2e8f0',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
                               fontWeight: 600
                             }}>
                               General Practice
                             </span>
                           )}
+                        </div>
+                        {test.bestAttempt && (
+                          <span className="best-score-badge" style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: '#ecfdf5',
+                            color: '#16a34a',
+                            border: '1px solid #bbf7d0',
+                            padding: '2px 8px',
+                            borderRadius: '6px'
+                          }}>
+                            Best: <b>{test.bestAttempt.percentage}%</b>
+                          </span>
+                        )}
                       </div>
-                      {test.bestAttempt && (
-                        <span className="best-score-badge" style={{ fontSize: '11px' }}>
-                          Best: <b>{test.bestAttempt.percentage}%</b>
-                        </span>
-                      )}
-                    </div>
 
-                    <h3 style={{ fontSize: '14px', margin: '0 0 4px', fontWeight: 700, color: '#0f172a' }}>{test.title}</h3>
-                    <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 10px', lineHeight: 1.4 }}>
-                      {test.description?.slice(0, 110)}...
-                    </p>
+                      <h3 style={{ fontSize: '15px', margin: '0 0 6px', fontWeight: 800, color: '#0f172a', lineHeight: 1.35 }}>
+                        {test.title}
+                      </h3>
+                      <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 14px', lineHeight: 1.5 }}>
+                        {test.description?.slice(0, 130)}...
+                      </p>
 
-                    <div className="test-specs-row" style={{ fontSize: '11px', marginBottom: '12px' }}>
-                      <div>
-                        <Clock size={13} />
-                        <span>{test.durationMinutes} Mins</span>
+                      <div className="test-specs-row" style={{
+                        fontSize: '11.5px',
+                        marginBottom: '14px',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '8px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Clock size={14} color="#2563eb" />
+                          <span><b>{test.durationMinutes}</b> Mins</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <FileCheck2 size={14} color="#2563eb" />
+                          <span><b>{test.questionCount}</b> Questions</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Award size={14} color="#2563eb" />
+                          <span><b>{test.totalMarks}</b> Marks <small style={{ color: '#64748b' }}>(+{test.marksPerQuestion} / -{test.negativeMarking})</small></span>
+                        </div>
                       </div>
-                      <div>
-                        <FileCheck2 size={13} />
-                        <span>{test.questionCount} Questions</span>
-                      </div>
-                      <div>
-                        <Award size={13} />
-                        <span>{test.totalMarks} Marks (+{test.marksPerQuestion} / -{test.negativeMarking})</span>
-                      </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      className="button"
-                      onClick={() => setSelectedTestForStart(test)}
-                      style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '6px 12px' }}
-                    >
-                      <Play size={13} /> Start Assessment
-                    </button>
-                  </article>
-                )
-              })}
+                      <button
+                        type="button"
+                        className="button"
+                        onClick={() => setSelectedTestForStart(test)}
+                        style={{
+                          width: '100%',
+                          justifyContent: 'center',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          padding: '9px 14px',
+                          borderRadius: '7px',
+                          background: '#2563eb',
+                          border: '1px solid #2563eb',
+                          boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)'
+                        }}
+                      >
+                        <Play size={13} /> Start Assessment
+                      </button>
+                    </article>
+                  )
+                })}
 
-                <div style={{ textAlign: 'center', marginTop: '4px' }}>
-                  <Link to="/mock-tests" className="button secondary" style={{ fontSize: '12px', width: '100%', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', marginTop: '2px' }}>
+                  <Link
+                    to="/mock-tests"
+                    className="button secondary"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      width: '100%',
+                      justifyContent: 'center',
+                      padding: '8px 14px',
+                      borderRadius: '7px',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      color: '#1e40af'
+                    }}
+                  >
                     View All Mock Assessments {mockTests.length > 1 ? `(${mockTests.length})` : ''} <ArrowRight size={13} />
                   </Link>
                 </div>

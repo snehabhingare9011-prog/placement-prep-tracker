@@ -264,73 +264,65 @@ export function ReadinessPage() {
           </p>
 
           {/* Donut Chart and Topic Summary Box */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '10px',
-            padding: '14px 18px',
-            marginBottom: '14px'
-          }}>
-            <div style={{ width: '104px', height: '104px', flexShrink: 0, position: 'relative', display: 'grid', placeItems: 'center' }}>
-              <svg width="104" height="104" viewBox="0 0 104 104" style={{ overflow: 'visible' }}>
+          <div className="readiness-syllabus-summary-card">
+            <div className="readiness-progress-circle-wrap">
+              <svg width="124" height="124" viewBox="0 0 124 124" style={{ overflow: 'visible' }}>
                 <circle
-                  cx="52"
-                  cy="52"
-                  r="42"
+                  cx="62"
+                  cy="62"
+                  r="51"
                   fill="transparent"
                   stroke="#e2e8f0"
-                  strokeWidth="8.5"
+                  strokeWidth="10"
                 />
                 <circle
-                  cx="52"
-                  cy="52"
-                  r="42"
+                  cx="62"
+                  cy="62"
+                  r="51"
                   fill="transparent"
                   stroke={preparation.percentage === 100 ? '#16a34a' : '#2563eb'}
-                  strokeWidth="8.5"
-                  strokeDasharray="263.89"
-                  strokeDashoffset={263.89 - (263.89 * Math.min(100, Math.max(0, preparation.percentage || 0))) / 100}
+                  strokeWidth="10"
+                  strokeDasharray="320.44"
+                  strokeDashoffset={320.44 - (320.44 * Math.min(100, Math.max(0, preparation.percentage || 0))) / 100}
                   strokeLinecap="round"
-                  transform="rotate(-90 52 52)"
-                  style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                  transform="rotate(-90 62 62)"
+                  style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
                 />
                 <text
-                  x="52"
-                  y="48"
+                  x="62"
+                  y="55"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize="21"
+                  fontSize="25"
                   fontWeight="800"
                   fill="#0f172a"
+                  letterSpacing="-0.5"
                 >
                   {preparation.percentage}%
                 </text>
                 <text
-                  x="52"
-                  y="65"
+                  x="62"
+                  y="74"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize="9.5"
+                  fontSize="10.5"
                   fontWeight="700"
                   fill="#64748b"
-                  letterSpacing="0.4"
+                  letterSpacing="0.8"
                 >
                   DONE
                 </text>
               </svg>
             </div>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '3px' }}>
+            <div className="readiness-progress-summary-info">
+              <span className="readiness-progress-eyebrow">
                 Syllabus Topic Completion
               </span>
-              <strong style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '3px' }}>
+              <strong className="readiness-progress-count">
                 {preparation.completedTopics} of {preparation.totalTopics} Topics
               </strong>
-              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+              <p className="readiness-progress-desc">
                 {preparation.completedTopics === preparation.totalTopics && preparation.totalTopics > 0
                   ? 'All syllabus topics have been completed across all sequential preparation rounds.'
                   : `${preparation.totalTopics - preparation.completedTopics} topic${(preparation.totalTopics - preparation.completedTopics) === 1 ? '' : 's'} remaining on your customized roadmap.`}
@@ -338,26 +330,34 @@ export function ReadinessPage() {
             </div>
           </div>
 
-          {/* Phase Progression Chips */}
+          {/* Phase Progression Cards */}
           {preparation.phasesProgress && preparation.phasesProgress.length > 0 && (
             <div className="readiness-phases-grid">
-              {preparation.phasesProgress.map((phase) => (
-                <div
-                  key={phase.phaseNumber}
-                  className={`readiness-phase-chip ${phase.status === 'Completed' ? 'is-completed' : (phase.status === 'Active' ? 'is-active' : '')}`}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>Phase {phase.phaseNumber}</span>
-                    {phase.status === 'Completed' && <Check size={11} color="#16a34a" />}
+              {preparation.phasesProgress.map((phase) => {
+                const isCompleted = phase.status === 'Completed'
+                const isActive = phase.status === 'Active'
+                const roundTitle = phase.name.replace(/^Phase\s*\d+:\s*/i, '')
+
+                return (
+                  <div
+                    key={phase.phaseNumber}
+                    className={`readiness-phase-chip ${isCompleted ? 'is-completed' : (isActive ? 'is-active' : 'is-upcoming')}`}
+                  >
+                    <div className="readiness-phase-top">
+                      <span className="readiness-phase-label">Phase {phase.phaseNumber}</span>
+                      {isCompleted && (
+                        <Check size={13} strokeWidth={2.5} color="#16a34a" />
+                      )}
+                    </div>
+                    <div className="readiness-phase-title" title={roundTitle}>
+                      {roundTitle}
+                    </div>
+                    <div className="readiness-phase-stats">
+                      <span>{phase.completed}/{phase.total} done ({phase.percentage}%)</span>
+                    </div>
                   </div>
-                  <strong style={{ fontSize: '11px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {phase.name.replace(/^Phase\s*\d+:\s*/i, '')}
-                  </strong>
-                  <span style={{ fontSize: '10px', color: phase.status === 'Completed' ? '#16a34a' : (phase.status === 'Active' ? '#2563eb' : '#94a3b8') }}>
-                    {phase.completed}/{phase.total} done ({phase.percentage}%)
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
@@ -390,21 +390,75 @@ export function ReadinessPage() {
             Assessment accuracy calculated from your latest eligible attempt for each mock test. Unanswered questions are excluded from accuracy.
           </p>
 
-          {/* Top Summary: Overall Accuracy, Completed, Attempts */}
-          <div className="mock-perf-summary-strip">
-            <div className="mock-perf-summary-item">
-              <span className="mock-perf-summary-label">Overall Accuracy</span>
-              <strong className={`mock-perf-summary-val ${overallAccuracy !== null ? 'highlight-acc' : ''}`}>
-                {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
-              </strong>
-              <span className="mock-perf-summary-sub">
-                {overallAccuracy !== null ? 'Across latest attempts' : 'No tests attempted'}
-              </span>
+          {/* Overall Accuracy Card with Circular Blue Donut Progress Indicator */}
+          <div className="overall-accuracy-card">
+            <div style={{ width: '104px', height: '104px', flexShrink: 0, position: 'relative', display: 'grid', placeItems: 'center' }}>
+              <svg width="104" height="104" viewBox="0 0 104 104" style={{ overflow: 'visible' }}>
+                <circle
+                  cx="52"
+                  cy="52"
+                  r="42"
+                  fill="transparent"
+                  stroke="#e2e8f0"
+                  strokeWidth="8.5"
+                />
+                <circle
+                  cx="52"
+                  cy="52"
+                  r="42"
+                  fill="transparent"
+                  stroke={overallAccuracy === 100 ? '#16a34a' : '#2563eb'}
+                  strokeWidth="8.5"
+                  strokeDasharray="263.89"
+                  strokeDashoffset={overallAccuracy !== null ? 263.89 - (263.89 * Math.min(100, Math.max(0, overallAccuracy))) / 100 : 263.89}
+                  strokeLinecap="round"
+                  transform="rotate(-90 52 52)"
+                  style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                />
+                <text
+                  x="52"
+                  y="48"
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize="21"
+                  fontWeight="800"
+                  fill="#0f172a"
+                >
+                  {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
+                </text>
+                <text
+                  x="52"
+                  y="65"
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize="9.5"
+                  fontWeight="700"
+                  fill="#64748b"
+                  letterSpacing="0.4"
+                >
+                  ACCURACY
+                </text>
+              </svg>
             </div>
 
-            <div className="mock-perf-summary-item">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '3px' }}>
+                OVERALL ACCURACY
+              </span>
+              <strong style={{ fontSize: '24px', fontWeight: 800, color: '#2563eb', display: 'block', marginBottom: '3px' }}>
+                {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
+              </strong>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                {overallAccuracy !== null ? 'Across latest attempts' : 'No tests attempted yet'}
+              </p>
+            </div>
+          </div>
+
+          {/* Secondary Stats Strip: Assessments Completed & Total Attempts */}
+          <div className="mock-perf-substats-strip">
+            <div className="mock-perf-substat-box">
               <span className="mock-perf-summary-label">Assessments Completed</span>
-              <strong className="mock-perf-summary-val">
+              <strong className="mock-perf-summary-val" style={{ fontSize: '18px' }}>
                 {uniqueAssessmentsCompleted} of {availableAssessments}
               </strong>
               <span className="mock-perf-summary-sub">
@@ -412,9 +466,9 @@ export function ReadinessPage() {
               </span>
             </div>
 
-            <div className="mock-perf-summary-item">
+            <div className="mock-perf-substat-box">
               <span className="mock-perf-summary-label">Total Attempts</span>
-              <strong className="mock-perf-summary-val">
+              <strong className="mock-perf-summary-val" style={{ fontSize: '18px' }}>
                 {submittedAttempts}
               </strong>
               <span className="mock-perf-summary-sub">

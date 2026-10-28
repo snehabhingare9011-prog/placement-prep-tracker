@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, ArrowRight, Building2 } from 'lucide-react'
+import { Search, ArrowRight, Building2, Sparkles, Briefcase } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
 import PageHeader from '../components/common/PageHeader'
@@ -110,16 +110,22 @@ export function CompaniesPage() {
                   <CompanyMark company={company} large />
                   {isTarget && (
                     <div className="company-card-top-tags">
-                      <span className="targeted-tag">Your Target</span>
+                      <span className="targeted-tag">
+                        <Sparkles size={11} /> Your Target
+                      </span>
                     </div>
                   )}
                 </div>
 
                 <h2>{company.name}</h2>
-                <p className="company-role-subtitle">{company.roles[0] || 'Software Engineer'}</p>
+                <p className="company-role-subtitle">
+                  <Briefcase size={12} color="#64748b" />
+                  <span>{company.roles[0] || 'Software Engineer'}</span>
+                </p>
 
                 <div className="company-tags">
                   <span>{company.recruitmentRounds?.length || 4} Rounds</span>
+                  {company.industry && <span>{company.industry}</span>}
                 </div>
 
                 <p className="company-card-desc">{company.description}</p>

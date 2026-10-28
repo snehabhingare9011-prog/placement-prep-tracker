@@ -13,7 +13,9 @@ import {
   Globe,
   Video as YoutubeIcon,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Check,
+  X
 } from 'lucide-react'
 import ProgressBar from '../components/common/ProgressBar'
 import PageHeader from '../components/common/PageHeader'
@@ -74,8 +76,6 @@ export function MockResultPage() {
     )
   }
 
-  const scorePct = result.percentage || 0
-  const isPassed = scorePct >= 70
   const questions = attempt.test?.questions || []
 
   // Create a map of student answers
@@ -85,15 +85,124 @@ export function MockResultPage() {
     answerMap.set(qId.toString(), a.selectedOption)
   })
 
-  // Map weak topics to verified curriculum resources
+  const correctCount = result.correctCount || 0
+  const incorrectCount = result.incorrectCount || 0
+  const unansweredCount = result.unansweredCount || 0
+  const attemptedCount = correctCount + incorrectCount
+
+  // Accuracy calculation: correct answers / attempted questions * 100
+  // Exclude unanswered questions. If 0 attempted, N/A.
+  const hasAttempted = attemptedCount > 0
+  const accuracyPct = hasAttempted ? Math.round((correctCount / attemptedCount) * 100) : null
+  const accuracyDisplay = hasAttempted ? `${accuracyPct}%` : 'N/A'
+
+  // Topic Performance: Compute assessed subjects/topics with question counts and accuracy
+  const assessedTopics = (result.subjectBreakdown || []).map(sb => {
+    let attempted = 0
+    let correct = sb.correctQuestions || 0
+    let total = sb.totalQuestions || 0
+
+    if (questions.length > 0) {
+      const subjQuestions = questions.filter(q => q.subject === sb.subject)
+      if (subjQuestions.length > 0) {
+        total = subjQuestions.length
+        attempted = subjQuestions.filter(q => {
+          const ans = answerMap.get(q._id?.toString() || q._id)
+          return ans !== undefined && ans !== null
+        }).length
+      }
+    } else {
+      attempted = total
+    }
+
+    const topicHasAttempted = attempted > 0
+    const topicAccuracy = topicHasAttempted ? Math.round((correct / attempted) * 100) : null
+    const isStrong = topicHasAttempted && topicAccuracy >= 70
+    const isNeedsWork = (topicHasAttempted && topicAccuracy < 60) || (!topicHasAttempted && (result.weakTopics || []).some(w => questions.some(q => q.subject === sb.subject && (q.topic === w || q.subject === w))))
+
+    return {
+      name: sb.subject,
+      total,
+      attempted,
+      correct,
+      topicAccuracy,
+      isStrong,
+      isNeedsWork
+    }
+  })
+
+  let topicPerformanceList = assessedTopics
+  if (topicPerformanceList.length === 0 && questions.length > 0) {
+    const grouped = {}
+    questions.forEach(q => {
+      const s = q.subject || 'General'
+      if (!grouped[s]) grouped[s] = { total: 0, attempted: 0, correct: 0 }
+      grouped[s].total += 1
+      const ans = answerMap.get(q._id?.toString() || q._id)
+      if (ans !== undefined && ans !== null) {
+        grouped[s].attempted += 1
+        if (String(ans) === String(q.correctAnswer)) {
+          grouped[s].correct += 1
+        }
+      }
+    })
+    topicPerformanceList = Object.entries(grouped).map(([name, data]) => {
+      const hasAtt = data.attempted > 0
+      const acc = hasAtt ? Math.round((data.correct / data.attempted) * 100) : null
+      return {
+        name,
+        total: data.total,
+        attempted: data.attempted,
+        correct: data.correct,
+        topicAccuracy: acc,
+        isStrong: hasAtt && acc >= 70,
+        isNeedsWork: (hasAtt && acc < 60) || (!hasAtt && (result.weakTopics || []).includes(name))
+      }
+    })
+  }
+
+  // Recommendations: at most 2 relevant study recommendations based on actual weak topics
   const weakTopicRecommendations = (result.weakTopics || []).map(topicName => {
     const hubId = mapQuestionToHubTopicId(topicName)
     const matchedResource = hubId ? curriculumTopics.find(t => t.id === hubId) : null
     return {
       weakName: topicName,
-      matchedResource
+      matchedResource,
+      action: matchedResource?.description
+        ? `Review ${matchedResource.title} and practice core problem patterns.`
+        : `Review foundational concepts and solve practice questions for ${topicName}.`
     }
   })
+
+  // Prioritize actionable recommendations that have matched curriculum resources
+  const sortedRecommendations = [...weakTopicRecommendations].sort((a, b) => {
+    if (a.matchedResource && !b.matchedResource) return -1
+    if (!a.matchedResource && b.matchedResource) return 1
+    return 0
+  })
+
+  const priorityRecommendations = sortedRecommendations.slice(0, 2)
+
+  function openStudyTopic(rec) {
+    if (rec.matchedResource) {
+      setSelectedResourceTopic(rec.matchedResource)
+    } else {
+      setSelectedResourceTopic({
+        id: `topic-${encodeURIComponent(rec.weakName)}`,
+        title: rec.weakName,
+        pillar: 'Technical',
+        importance: 'High',
+        estimatedHours: '2-3 hrs',
+        description: `Targeted revision guide for ${rec.weakName}. Focus on core concepts, recurring problem patterns, and interview question explanations.`,
+        popularWebsites: [
+          { name: 'Interview Preparation & Guides', url: `https://www.google.com/search?q=${encodeURIComponent(rec.weakName + ' interview questions')}` }
+        ],
+        youtubeVideos: [
+          { title: `${rec.weakName} Overview & Key Concepts`, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(rec.weakName + ' tutorial interview')}` }
+        ]
+      })
+    }
+  }
 
   return (
     <div className="mock-result-page">
@@ -114,200 +223,277 @@ export function MockResultPage() {
         </button>
       </PageHeader>
 
-      {/* Main Result Scorecards */}
-      <section className="result-layout">
-        {/* Score Card */}
-        <article className="result-score-card">
-          <span>FINAL SCORE</span>
-          <b>{result.score} <small>/ {result.maxScore || 24}</small></b>
-          <div className="result-pct-display">
-            <strong>{scorePct}%</strong>
-            <span className={`status-pill ${isPassed ? 'good' : 'attention'}`}>
-              {isPassed ? 'Ready for Campus Drive' : 'Needs Topic Revision'}
+      {/* Section 1 — Assessment Summary */}
+      <section className="assessment-summary-section">
+        <div className="summary-metrics-row">
+          {/* Metric 1: Accuracy (Primary performance metric) */}
+          <div className="metric-summary-card accuracy-card">
+            <div className="metric-header">
+              <span className="metric-label">Accuracy</span>
+              <Target size={16} className="metric-icon" />
+            </div>
+            <div className="metric-value-wrap">
+              <span className="metric-value">{accuracyDisplay}</span>
+            </div>
+            <span className="metric-hint">
+              {hasAttempted ? 'Across attempted questions' : 'No questions attempted'}
             </span>
           </div>
 
-          <div className="result-breakdown-counts">
-            <div>
-              <CheckCircle2 size={16} className="text-green" />
-              <span><b>{result.correctCount}</b> Correct</span>
+          {/* Metric 2: Correct Answers */}
+          <div className="metric-summary-card correct-card">
+            <div className="metric-header">
+              <span className="metric-label">Correct</span>
+              <CheckCircle2 size={16} className="metric-icon text-green" />
             </div>
-            <div>
-              <XCircle size={16} className="text-red" />
-              <span><b>{result.incorrectCount}</b> Incorrect</span>
+            <div className="metric-value-wrap">
+              <span className="metric-value">{correctCount}</span>
             </div>
-            <div>
-              <HelpCircle size={16} className="text-muted" />
-              <span><b>{result.unansweredCount}</b> Unanswered</span>
-            </div>
+            <span className="metric-hint">Answered accurately</span>
           </div>
 
-          <p style={{ margin: '14px 0 0', fontSize: '11px', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
-            Note: This score evaluates test performance only. Roadmap topic completion remains tracked separately.
-          </p>
-        </article>
-
-        {/* Subject-Wise Breakdown */}
-        <article className="result-breakdown-card">
-          <h2>Subject-Wise Performance</h2>
-          <div className="subject-bars-list">
-            {result.subjectBreakdown?.map(sb => (
-              <ProgressBar
-                key={sb.subject}
-                label={`${sb.subject} (${sb.correctQuestions}/${sb.totalQuestions})`}
-                value={sb.percentage}
-                tone={sb.percentage >= 75 ? 'green' : sb.percentage < 60 ? 'orange' : 'blue'}
-              />
-            ))}
+          {/* Metric 3: Incorrect Answers */}
+          <div className="metric-summary-card incorrect-card">
+            <div className="metric-header">
+              <span className="metric-label">Incorrect</span>
+              <XCircle size={16} className="metric-icon text-red" />
+            </div>
+            <div className="metric-value-wrap">
+              <span className="metric-value">{incorrectCount}</span>
+            </div>
+            <span className="metric-hint">Needs revision</span>
           </div>
 
-          {result.weakTopics?.length > 0 && (
-            <div className="weak-topics-box" style={{ marginTop: '16px' }}>
-              <strong>Identified Weak Topics from Assessment:</strong>
-              <div className="weak-topic-tags" style={{ marginTop: '8px' }}>
-                {result.weakTopics.map(topic => (
-                  <span key={topic}>{topic}</span>
-                ))}
-              </div>
+          {/* Metric 4: Unanswered Questions */}
+          <div className="metric-summary-card unanswered-card">
+            <div className="metric-header">
+              <span className="metric-label">Unanswered</span>
+              <HelpCircle size={16} className="metric-icon text-muted" />
             </div>
-          )}
-        </article>
+            <div className="metric-value-wrap">
+              <span className="metric-value">{unansweredCount}</span>
+            </div>
+            <span className="metric-hint">Left unattempted</span>
+          </div>
+        </div>
+      </section>
 
-        {/* Evidence-Based Recommended Next Actions */}
-        <article className="result-next-card">
-          <h2>Recommended Actions</h2>
-          <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
-            Address lower-scoring areas before attempting another timed assessment:
-          </p>
+      {/* Section 2 — Performance Insights and Next Steps */}
+      <section className="assessment-insights-section">
+        <div className="insights-two-column-grid">
+          {/* Area A: Topic Performance */}
+          <div className="insight-area-card topic-performance-area">
+            <div className="area-header">
+              <h3>Topic Performance</h3>
+              <span className="area-badge">{topicPerformanceList.length} Assessed</span>
+            </div>
 
-          {weakTopicRecommendations.length > 0 ? (
-            <div style={{ display: 'grid', gap: '10px', marginBottom: '14px' }}>
-              {weakTopicRecommendations.map((item, idx) => {
-                if (item.matchedResource) {
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        background: '#eff6ff',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: '8px',
-                        padding: '10px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '10px',
-                        flexWrap: 'wrap'
-                      }}
-                    >
-                      <div>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase' }}>
-                          Revise: {item.weakName}
+            <div className="topics-performance-list">
+              {topicPerformanceList.map(topic => {
+                const hasAttemptedTopic = topic.attempted > 0
+                return (
+                  <div key={topic.name} className="topic-perf-item">
+                    <div className="topic-perf-top">
+                      <div className="topic-perf-identity">
+                        <strong className="topic-perf-title">{topic.name}</strong>
+                        <span className="topic-perf-counts">
+                          {topic.correct} of {topic.attempted} attempted
+                          {topic.total > topic.attempted ? ` (${topic.total} total)` : ''}
                         </span>
-                        <strong style={{ fontSize: '13px', color: '#0f172a', display: 'block' }}>
-                          {item.matchedResource.title}
-                        </strong>
                       </div>
 
-                      <button
-                        type="button"
-                        className="button primary"
-                        onClick={() => setSelectedResourceTopic(item.matchedResource)}
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
-                      >
-                        <BookOpen size={12} /> Study Topic
-                      </button>
+                      <div className="topic-perf-status">
+                        <span className="topic-perf-accuracy">
+                          {hasAttemptedTopic ? `${topic.topicAccuracy}%` : 'N/A'}
+                        </span>
+                        {hasAttemptedTopic ? (
+                          topic.isStrong ? (
+                            <span className="topic-tag-strong">Strong</span>
+                          ) : topic.isNeedsWork ? (
+                            <span className="topic-tag-weak">Needs Work</span>
+                          ) : (
+                            <span className="topic-tag-mid">Fair</span>
+                          )
+                        ) : (
+                          <span className="topic-tag-neutral">Unattempted</span>
+                        )}
+                      </div>
                     </div>
-                  )
-                }
 
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      fontSize: '12px',
-                      color: '#64748b'
-                    }}
-                  >
-                    <b>{item.weakName}</b>: Resource not available yet.
+                    <div className="topic-perf-progress-track">
+                      <div
+                        className={`topic-perf-progress-fill ${
+                          !hasAttemptedTopic
+                            ? 'neutral'
+                            : topic.isStrong
+                            ? 'strong'
+                            : topic.isNeedsWork
+                            ? 'weak'
+                            : 'mid'
+                        }`}
+                        style={{ width: `${hasAttemptedTopic ? topic.topicAccuracy : 0}%` }}
+                      />
+                    </div>
                   </div>
                 )
               })}
             </div>
-          ) : (
-            <p style={{ fontSize: '12px', color: '#166534', background: '#f0fdf4', padding: '10px', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
-              Great performance! No critical topic weaknesses were detected in this assessment.
-            </p>
-          )}
-
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <Link to="/company-prep" className="button secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '12px' }}>
-              <BookOpen size={14} /> Open Preparation Hub
-            </Link>
-            <Link to="/roadmap" className="button secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '12px' }}>
-              View Roadmap
-            </Link>
           </div>
-        </article>
+
+          {/* Area B: Recommended Next Steps */}
+          <div className="insight-area-card next-steps-area">
+            <div className="area-header">
+              <h3>Recommended Next Steps</h3>
+              <span className="area-subtitle">Priority focus areas based on your test answers</span>
+            </div>
+
+            {priorityRecommendations.length > 0 ? (
+              <div className="recommendations-flow">
+                {/* At most 2 priority recommendations */}
+                <div className="priority-recommendations-list">
+                  {priorityRecommendations.map((rec, idx) => (
+                    <div key={idx} className="recommendation-step-card">
+                      <div className="recommendation-step-main">
+                        <div className="recommendation-step-head">
+                          <span className="recommendation-step-badge">Revise</span>
+                          <strong className="recommendation-step-title">{rec.weakName}</strong>
+                        </div>
+                        <p className="recommendation-step-action">{rec.action}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="button primary study-topic-btn"
+                        onClick={() => openStudyTopic(rec)}
+                      >
+                        <BookOpen size={13} />
+                        <span>Study Topic</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="no-weaknesses-state">
+                <CheckCircle2 size={24} className="text-green" />
+                <div>
+                  <strong>Great performance!</strong>
+                  <p>No critical weak topics were identified in this assessment.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Small secondary actions at the bottom */}
+            <div className="next-steps-footer-actions">
+              <Link to="/company-prep" className="button secondary small-action-btn">
+                <BookOpen size={13} />
+                <span>Open Preparation Hub</span>
+              </Link>
+              <Link to="/roadmap" className="button secondary small-action-btn">
+                <Target size={13} />
+                <span>View Roadmap</span>
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Post-Test Question Review Section */}
+      {/* Question Review & Solutions Section */}
       {showReview && (
-        <section className="test-review-section">
-          <h2>Comprehensive Question Review & Solutions</h2>
-          <p className="review-subtext">
-            Analyze your submitted selections alongside the server-verified correct answers and algorithmic explanations.
-          </p>
+        <section className="test-review-section" id="review-solutions">
+          <div className="review-section-header">
+            <h2>Question Review & Solutions</h2>
+            <p className="review-subtext">
+              Review your submitted answers, verify the correct solutions, and understand the technical explanations.
+            </p>
+          </div>
 
           <div className="review-questions-list">
             {questions.map((q, idx) => {
               const studentChoice = answerMap.get(q._id.toString())
-              const isCorrect = studentChoice !== undefined && studentChoice !== null && String(studentChoice) === String(q.correctAnswer)
               const wasAnswered = studentChoice !== undefined && studentChoice !== null
+              const isCorrect = wasAnswered && String(studentChoice) === String(q.correctAnswer)
+              const statusClass = !wasAnswered ? 'unanswered' : isCorrect ? 'correct' : 'incorrect'
 
               return (
-                <div key={q._id} className={`review-question-card ${isCorrect ? 'correct' : 'incorrect'}`}>
+                <article key={q._id} className={`review-question-card ${statusClass}`}>
+                  {/* Question Header */}
                   <div className="review-q-head">
-                    <span>Question {idx + 1} · {q.subject} ({q.topic})</span>
-                    <span className={`review-status-tag ${isCorrect ? 'tag-correct' : 'tag-wrong'}`}>
-                      {isCorrect ? '✓ Correct (+4)' : wasAnswered ? '✗ Incorrect (-1)' : '○ Unanswered (0)'}
-                    </span>
+                    <div className="review-q-meta">
+                      <span className="review-q-number">Question {idx + 1}</span>
+                      <span className="review-q-divider">·</span>
+                      <span className="review-q-topic">
+                        {q.subject}{q.topic ? ` (${q.topic})` : ''}
+                      </span>
+                    </div>
+
+                    <div className="review-q-status">
+                      {isCorrect ? (
+                        <span className="review-result-badge badge-correct">
+                          <Check size={12} strokeWidth={2.8} /> Correct
+                        </span>
+                      ) : wasAnswered ? (
+                        <span className="review-result-badge badge-incorrect">
+                          <X size={12} strokeWidth={2.8} /> Incorrect
+                        </span>
+                      ) : (
+                        <span className="review-result-badge badge-unanswered">
+                          Unanswered
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <h3>{q.title}</h3>
-                  <p className="q-statement">{q.statement}</p>
+                  {/* Question Title & Text */}
+                  <h3 className="review-question-title">{q.title}</h3>
+                  <p className="review-question-statement">{q.statement}</p>
 
-                  {/* Options with clear markings */}
+                  {/* Answer Options Grid */}
                   <div className="review-options-grid">
                     {q.options?.map((opt, optIdx) => {
-                      const isStudentSelected = studentChoice === optIdx
+                      const isStudentSelected = wasAnswered && Number(studentChoice) === optIdx
                       const isOfficialCorrect = Number(q.correctAnswer) === optIdx
 
-                      let optClass = 'review-opt-box'
-                      if (isOfficialCorrect) optClass += ' official-correct'
-                      if (isStudentSelected && !isOfficialCorrect) optClass += ' student-wrong'
+                      let optionStateClass = 'option-neutral'
+                      if (isOfficialCorrect) {
+                        optionStateClass = 'option-correct'
+                      } else if (isStudentSelected) {
+                        optionStateClass = 'option-incorrect'
+                      }
 
                       return (
-                        <div key={optIdx} className={optClass}>
-                          <b>{String.fromCharCode(65 + optIdx)}</b>
-                          <span>{opt}</span>
-                          {isOfficialCorrect && <span className="opt-tag correct">Correct Key</span>}
-                          {isStudentSelected && !isOfficialCorrect && <span className="opt-tag wrong">Your Answer</span>}
+                        <div key={optIdx} className={`review-option-tile ${optionStateClass}`}>
+                          <span className="option-letter-badge">
+                            {String.fromCharCode(65 + optIdx)}
+                          </span>
+                          <span className="option-text">{opt}</span>
+
+                          {isOfficialCorrect && (
+                            <span className="option-state-pill correct-pill">
+                              <Check size={12} strokeWidth={2.8} /> Correct Answer
+                            </span>
+                          )}
+                          {!isOfficialCorrect && isStudentSelected && (
+                            <span className="option-state-pill wrong-pill">
+                              <X size={12} strokeWidth={2.8} /> Your Answer
+                            </span>
+                          )}
                         </div>
                       )
                     })}
                   </div>
 
+                  {/* Solution Explanation Panel */}
                   {q.explanation && (
                     <div className="review-explanation-box">
-                      <strong>Solution Explanation:</strong>
-                      <p>{q.explanation}</p>
+                      <div className="explanation-header">
+                        <HelpCircle size={14} className="explanation-icon" />
+                        <strong>Why is this correct?</strong>
+                      </div>
+                      <p className="explanation-text">{q.explanation}</p>
                     </div>
                   )}
-                </div>
+                </article>
               )
             })}
           </div>

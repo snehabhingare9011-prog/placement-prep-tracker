@@ -1,15 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
-  Building2,
-  Calendar,
   CheckCircle2,
-  Code2,
-  FileCheck2,
-  ArrowRight,
-  ShieldCheck,
-  Target,
-  ExternalLink
+  ArrowRight
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
@@ -26,10 +19,9 @@ export function CompanyGuidePage() {
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState(null)
   const [roles, setRoles] = useState([])
-  const [tests, setTests] = useState([])
   const [drives, setDrives] = useState([])
   const [userProgress, setUserProgress] = useState(null)
-  const [activeTab, setActiveTab] = useState('process') // 'process' | 'tests' | 'eligibility'
+  const [activeTab, setActiveTab] = useState('process') // 'process' | 'eligibility'
 
   useEffect(() => {
     async function loadCompanyDetails() {
@@ -39,8 +31,6 @@ export function CompanyGuidePage() {
         if (res.success && res.company) {
           setCompany(res.company)
           setRoles(res.roles || [])
-          setQuestions(res.questions || [])
-          setTests(res.tests || [])
           setDrives(res.drives || [])
           setUserProgress(res.userProgress)
         }
@@ -141,13 +131,6 @@ export function CompanyGuidePage() {
         </button>
         <button
           type="button"
-          className={activeTab === 'tests' ? 'active' : ''}
-          onClick={() => setActiveTab('tests')}
-        >
-          Mock Assessments ({tests.length})
-        </button>
-        <button
-          type="button"
           className={activeTab === 'eligibility' ? 'active' : ''}
           onClick={() => setActiveTab('eligibility')}
         >
@@ -201,43 +184,12 @@ export function CompanyGuidePage() {
 
             <section className="guide-panel">
               <h3>Recommended Next Step</h3>
-              <p>Complete a {company.name}-specific mock test to benchmark your baseline readiness.</p>
-              <Link to="/mock-tests" className="button" style={{ width: '100%', justifyContent: 'center' }}>
-                <FileCheck2 size={16} /> Start Mock Assessment
+              <p>Explore all recruitment topics and syllabus milestones in the Preparation Hub.</p>
+              <Link to={`/company-prep?company=${company._id}`} className="button" style={{ width: '100%', justifyContent: 'center' }}>
+                <ArrowRight size={16} /> Open Preparation Hub
               </Link>
             </section>
           </aside>
-        </section>
-      )}
-
-      {/* Tab 2: Mock Tests */}
-      {activeTab === 'tests' && (
-        <section className="guide-section">
-          <h2>Diagnostic Tests Aligned with {company.name}</h2>
-          <div className="tagged-tests-grid">
-            {tests.length > 0 ? (
-              tests.map(t => (
-                <div key={t._id} className="test-card-box">
-                  <div className="test-card-head">
-                    <CompanyMark company={company} />
-                    <span className="test-difficulty">{t.difficulty}</span>
-                  </div>
-                  <h3>{t.title}</h3>
-                  <p>{t.description}</p>
-                  <div className="test-specs">
-                    <span>{t.durationMinutes} Minutes</span>
-                    <span>{t.questions?.length || 0} Questions</span>
-                    <span>{t.totalMarks || 24} Marks</span>
-                  </div>
-                  <Link to={`/mock-tests`} className="button" style={{ width: '100%', justifyContent: 'center' }}>
-                    <FileCheck2 size={16} /> Take Mock Test
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <p className="empty-copy">No mock test currently linked to this company.</p>
-            )}
-          </div>
         </section>
       )}
 

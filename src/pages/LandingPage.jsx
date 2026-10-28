@@ -247,7 +247,7 @@ export function LandingPage() {
 
               {/* Main Heading */}
               <h1 className="saas-hero-title">
-                Your Placement Journey Starts Here.
+                Your Placement Journey <span className="saas-hero-gradient-text">Starts Here.</span>
               </h1>
 
               {/* Supporting Description */}

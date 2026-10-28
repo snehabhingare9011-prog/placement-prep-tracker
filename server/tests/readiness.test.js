@@ -60,6 +60,58 @@ describe('Readiness Scoring & Preparation Roadmap Engine', () => {
     assert.ok(res.body.readiness.overallScore > 0 && res.body.readiness.overallScore <= 100)
     assert.ok(Array.isArray(res.body.readiness.skillsBreakdown))
     assert.ok(res.body.readiness.formulaExplanation)
+
+    // Verify evidence-based scores (no fabricated percentages for unattempted subjects)
+    res.body.readiness.skillsBreakdown.forEach(skill => {
+      if (skill.attempted === 0) {
+        assert.strictEqual(skill.score, null, 'Unattempted subject must have null score, not fabricated percentage')
+        assert.strictEqual(skill.status, 'untested')
+      } else {
+        assert.ok(typeof skill.score === 'number')
+      }
+    })
+
+    // Verify round-wise readiness when recruitment rounds exist
+    assert.ok(Array.isArray(res.body.readiness.roundReadiness))
+    if (res.body.readiness.roundReadiness.length > 0) {
+      const firstRound = res.body.readiness.roundReadiness[0]
+      assert.ok(firstRound.name)
+      assert.ok(['Completed', 'In Progress', 'Pending'].includes(firstRound.status))
+    }
+
+    // Verify separate metrics for preparation progress and test performance
+    assert.ok(typeof res.body.readiness.metrics.preparationProgress === 'number')
+    assert.ok(typeof res.body.readiness.metrics.averageTestScore === 'number')
+
+    // Verify Section A: Preparation Progress
+    assert.ok(res.body.readiness.preparation)
+    assert.ok(typeof res.body.readiness.preparation.completedTopics === 'number')
+    assert.ok(typeof res.body.readiness.preparation.totalTopics === 'number')
+    assert.ok(typeof res.body.readiness.preparation.percentage === 'number')
+
+    // Verify Section B: Mock Performance & Score History
+    assert.ok(res.body.readiness.mockPerformance)
+    assert.ok(typeof res.body.readiness.mockPerformance.testsCompleted === 'number')
+    assert.ok(Array.isArray(res.body.readiness.mockPerformance.recentTestHistory))
+
+    // Verify Section C: Subject-wise evidence
+    assert.ok(Array.isArray(res.body.readiness.subjectAnalysis))
+    res.body.readiness.subjectAnalysis.forEach(sa => {
+      assert.ok(['Strong', 'Needs Focus', 'Not Enough Data', 'Not Attempted'].includes(sa.status))
+      if (sa.attempted === 0) {
+        assert.strictEqual(sa.accuracy, null)
+      } else {
+        assert.ok(typeof sa.accuracy === 'number')
+      }
+    })
+
+    // Verify Section D: Prioritized next actions (max 3)
+    assert.ok(Array.isArray(res.body.readiness.nextActions))
+    assert.ok(res.body.readiness.nextActions.length <= 3)
+    if (res.body.readiness.nextActions.length > 0) {
+      assert.ok(res.body.readiness.nextActions[0].title)
+      assert.ok(res.body.readiness.nextActions[0].actionLink)
+    }
   })
 
   test('Roadmap: retrieves or generates structured 4-phase preparation plan', async () => {

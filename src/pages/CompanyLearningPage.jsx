@@ -73,9 +73,11 @@ export function CompanyLearningPage() {
   // Sync selected company & role when user target changes
   useEffect(() => {
     const urlCompanyId = searchParams.get('company')
-    if (!urlCompanyId && activeUserTargetId && activeUserTargetId !== selectedCompanyId) {
-      setSelectedCompanyId(activeUserTargetId)
-      if (user?.currentTargetRole) {
+    if (!urlCompanyId) {
+      if (activeUserTargetId && activeUserTargetId.toString() !== selectedCompanyId?.toString()) {
+        setSelectedCompanyId(activeUserTargetId.toString())
+      }
+      if (user?.currentTargetRole && (!selectedRoles.includes(user.currentTargetRole) || selectedRoles.length !== 1)) {
         setSelectedRoles([user.currentTargetRole])
       }
     }
@@ -118,6 +120,13 @@ export function CompanyLearningPage() {
               : (res.company?.roles?.slice(0, 1) || ['Software Engineer'])
             setSelectedRoles(defaultRole)
           }
+          const topicParam = searchParams.get('topic')
+          if (topicParam && res.topics) {
+            const match = res.topics.find(t => t.id === topicParam)
+            if (match) {
+              setSelectedResourceTopic(match)
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to load company curriculum:', err)
@@ -127,14 +136,18 @@ export function CompanyLearningPage() {
       }
     }
     loadCurriculum()
-  }, [selectedCompanyId, selectedRoles.length])
+  }, [selectedCompanyId, selectedRoles.join(',')])
 
   // Handle company change
   const handleCompanyChange = (e) => {
     const compId = e.target.value
     setSelectedCompanyId(compId)
     setSearchParams({ company: compId })
-    setSelectedRoles([])
+    const targetCo = companies.find(c => c._id === compId)
+    const newRole = activeUserRole && targetCo?.roles?.includes(activeUserRole)
+      ? [activeUserRole]
+      : (targetCo?.roles?.slice(0, 1) || ['Software Engineer'])
+    setSelectedRoles(newRole)
   }
 
   // Toggle role selection
@@ -373,8 +386,8 @@ export function CompanyLearningPage() {
       ) : filteredTopics.length === 0 ? (
         <div className="empty-topics-state">
           <BookOpen size={42} />
-          <h3>No topics found for this filter</h3>
-          <p>Try selecting additional job roles above or choosing 'All' topics.</p>
+          <h3>No resources available for this target yet.</h3>
+          <p>No preparation resources match the selected target company and role.</p>
         </div>
       ) : (
         <div className="topics-checklist-grid">
@@ -441,7 +454,7 @@ export function CompanyLearningPage() {
                         </span>
                       )}
                     </div>
-                    <h3 className={isCompleted ? 'line-through-title' : ''}>
+                    <h3>
                       {topic.title}
                     </h3>
                   </div>
@@ -507,11 +520,11 @@ export function CompanyLearningPage() {
           close={() => setSelectedResourceTopic(null)}
           onClose={() => setSelectedResourceTopic(null)}
           title={`Study Topic: ${selectedResourceTopic.title}`}
-          maxWidth="720px"
+          maxWidth="560px"
         >
           <div className="resource-modal-content">
             <div className="modal-topic-overview">
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
                 <span className={`pillar-tag ${selectedResourceTopic.pillar.toLowerCase().replace(/[^a-z]/g, '-')}`}>
                   {selectedResourceTopic.pillar}
                 </span>
@@ -543,7 +556,7 @@ export function CompanyLearningPage() {
               border: '1px solid #e2e8f0',
               borderRadius: '8px',
               padding: '12px 14px',
-              margin: '14px 0'
+              margin: '2px 0'
             }}>
               <strong style={{ fontSize: '12px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Lightbulb size={14} color="#2563eb" /> Key Concepts to Master:
@@ -645,7 +658,9 @@ export function CompanyLearningPage() {
               alignItems: 'center',
               borderTop: '1px solid #e2e8f0',
               paddingTop: '14px',
-              marginTop: '14px'
+              marginTop: '14px',
+              flexWrap: 'wrap',
+              gap: '10px'
             }}>
               <button
                 type="button"

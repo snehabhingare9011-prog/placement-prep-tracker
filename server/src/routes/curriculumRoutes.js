@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authenticate } from '../middleware/authenticate.js'
 import Company from '../models/Company.js'
 import User from '../models/User.js'
+import { Roadmap } from '../models/Roadmap.js'
 import { getCurriculumForCompany, COMPANY_CURRICULUM } from '../services/curriculumService.js'
 
 const router = Router()
@@ -163,6 +164,29 @@ router.patch('/toggle-topic', authenticate, async (req, res) => {
 
     user.markModified('targetProgress')
     await user.save()
+
+    // Keep active Roadmap tasks synchronized in database
+    if (activeCompanyId) {
+      const roadmap = await Roadmap.findOne({ user: user._id, company: activeCompanyId })
+      if (roadmap) {
+        roadmap.phases.forEach(phase => {
+          phase.tasks.forEach(task => {
+            if (task.taskId === topicId) {
+              task.completed = isCompleted
+              task.completedAt = isCompleted ? new Date() : null
+            }
+          })
+        })
+        const allTasks = roadmap.phases.flatMap(p => p.tasks)
+        const uniqueTaskIds = [...new Set(allTasks.map(t => t.taskId))]
+        const uniqueCompleted = [...new Set(allTasks.filter(t => t.completed).map(t => t.taskId))]
+        roadmap.progressPercentage = uniqueTaskIds.length > 0
+          ? Math.round((uniqueCompleted.length / uniqueTaskIds.length) * 100)
+          : 0
+        roadmap.markModified('phases')
+        await roadmap.save()
+      }
+    }
 
     const selectedRoles = user.selectedRoles?.length > 0 ? user.selectedRoles : (user.targetRoles || [activeRole])
     let progressPercentage = 0

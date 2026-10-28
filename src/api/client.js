@@ -91,6 +91,7 @@ export const api = {
     submit: (attemptId, answers) => client.post(`/test-attempts/attempts/${attemptId}/submit`, { answers }),
     getResults: (attemptId) => client.get(`/test-attempts/attempts/${attemptId}/results`),
     getHistory: () => client.get('/tests/history'),
+    getInsights: (params) => client.get('/tests/insights', { params }),
     create: (data) => client.post('/tests', data),
     update: (id, data) => client.patch(`/tests/${id}`, data),
     delete: (id) => client.delete(`/tests/${id}`)

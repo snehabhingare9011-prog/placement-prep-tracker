@@ -4,19 +4,29 @@ import { X } from 'lucide-react'
 export function Modal({ title, children, close, onClose, maxWidth = '560px' }) {
   const handleClose = close || onClose || (() => {})
 
+  // Prevent background scrolling while modal is open
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') handleClose()
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [handleClose])
+
+  const responsiveWidth = `min(${maxWidth || '560px'}, calc(100vw - 32px))`
 
   return (
     <div className="modal-backdrop" onMouseDown={handleClose}>
       <section
         className="modal"
-        style={{ maxWidth }}
+        style={{ width: responsiveWidth, maxWidth: responsiveWidth }}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -32,7 +42,9 @@ export function Modal({ title, children, close, onClose, maxWidth = '560px' }) {
             <X size={18} />
           </button>
         </div>
-        {children}
+        <div className="modal-body">
+          {children}
+        </div>
       </section>
     </div>
   )

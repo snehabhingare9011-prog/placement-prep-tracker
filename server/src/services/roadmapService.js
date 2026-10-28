@@ -1,7 +1,75 @@
 import { Company } from '../models/Company.js'
-import { PracticeAttempt } from '../models/PracticeAttempt.js'
-import { TestAttempt } from '../models/TestAttempt.js'
 import { Roadmap } from '../models/Roadmap.js'
+import { User } from '../models/User.js'
+import { getCurriculumForCompany, COMPANY_CURRICULUM } from './curriculumService.js'
+
+// Pre-verified mappings from company recruitment rounds to required curriculum topics
+const COMPANY_ROUND_TOPIC_MAPPINGS = {
+  google: [
+    // Round 1: Online Assessment
+    ['dsa-arrays-strings', 'dsa-trees-bst'],
+    // Round 2: Technical Round 1: DSA
+    ['dsa-linked-lists', 'dsa-graphs', 'dsa-dynamic-programming'],
+    // Round 3: Technical Round 2: Core CS
+    ['core-dbms-sql', 'core-os', 'web-system-design', 'core-cn'],
+    // Round 4: Googliness & Leadership
+    ['hr-star-framework']
+  ],
+  microsoft: [
+    // Round 1: Online Coding Assessment
+    ['dsa-arrays-strings', 'dsa-linked-lists'],
+    // Round 2: Technical Interview 1
+    ['dsa-trees-bst', 'dsa-graphs', 'dsa-dynamic-programming'],
+    // Round 3: Technical Interview 2
+    ['core-oop', 'core-dbms-sql', 'core-os'],
+    // Round 4: AA / Managerial Round
+    ['hr-star-framework']
+  ],
+  amazon: [
+    // Round 1: Online Assessment
+    ['dsa-arrays-strings', 'dsa-trees-bst'],
+    // Round 2: Technical Round: Problem Solving
+    ['dsa-linked-lists', 'dsa-graphs', 'dsa-dynamic-programming'],
+    // Round 3: Technical Round: CS Fundamentals
+    ['core-dbms-sql', 'core-os', 'web-system-design'],
+    // Round 4: Bar Raiser Round
+    ['hr-star-framework']
+  ],
+  accenture: [
+    // Round 1: Cognitive & Technical Assessment
+    ['apti-quantitative', 'apti-logical-reasoning', 'apti-verbal-ability'],
+    // Round 2: Coding Assessment
+    ['dsa-arrays-strings', 'dsa-linked-lists'],
+    // Round 3: Communication Assessment
+    ['apti-verbal-ability'],
+    // Round 4: Technical & HR Discussion
+    ['core-dbms-sql', 'core-oop', 'web-javascript-react', 'web-backend-apis', 'hr-star-framework']
+  ],
+  tcs: [
+    // Round 1: TCS NQT Assessment
+    ['apti-quantitative', 'apti-logical-reasoning', 'apti-verbal-ability', 'dsa-arrays-strings'],
+    // Round 2: Technical Interview
+    ['core-oop', 'core-dbms-sql', 'core-os', 'core-cn'],
+    // Round 3: Managerial & HR Interview
+    ['hr-star-framework']
+  ],
+  infosys: [
+    // Round 1: Online Test (InfyTQ)
+    ['apti-quantitative', 'apti-logical-reasoning', 'dsa-arrays-strings'],
+    // Round 2: Technical Interview
+    ['core-oop', 'core-dbms-sql', 'core-os'],
+    // Round 3: HR Interview
+    ['hr-star-framework']
+  ],
+  deloitte: [
+    // Round 1: Aptitude & Verbal Test
+    ['apti-quantitative', 'apti-logical-reasoning', 'apti-verbal-ability'],
+    // Round 2: Technical & Case Round
+    ['core-dbms-sql', 'core-oop'],
+    // Round 3: Partner / HR Interview
+    ['hr-star-framework']
+  ]
+}
 
 export async function generateRoadmapForStudent(userId, companyId, roleTitle, availableWeeks = 8) {
   const company = await Company.findById(companyId).lean()
@@ -9,220 +77,192 @@ export async function generateRoadmapForStudent(userId, companyId, roleTitle, av
     throw new Error('Target company not found')
   }
 
-  // Find student weak topics
-  const practiceAttempts = await PracticeAttempt.find({ user: userId }).populate('question').lean()
-  const weakSubjects = new Set()
-  const topicCounts = {}
+  const role = roleTitle || company.roles?.[0] || 'Software Engineer'
 
-  practiceAttempts.forEach(p => {
-    const subj = p.question?.subject
-    if (!subj) return
-    if (!topicCounts[subj]) topicCounts[subj] = { total: 0, correct: 0 }
-    topicCounts[subj].total += 1
-    if (p.isCorrect || p.status === 'solved') topicCounts[subj].correct += 1
-  })
+  // Get verified curriculum topics matching this company and role
+  const curriculum = getCurriculumForCompany(company, [role])
+  const roleTopics = curriculum.topics || []
+  const topicMap = new Map(roleTopics.map(t => [t.id, t]))
 
-  Object.entries(topicCounts).forEach(([subj, data]) => {
-    if (data.total >= 2 && Math.round((data.correct / data.total) * 100) < 60) {
-      weakSubjects.add(subj)
+  // Fetch student's saved completion states for this company and role
+  const user = await User.findById(userId).lean()
+  let completedTopicIds = user?.completedTopics || []
+  if (companyId && user?.targetProgress?.length > 0) {
+    const entry = user.targetProgress.find(
+      tp => tp.company?.toString() === companyId.toString() && (!role || tp.role === role || !tp.role)
+    )
+    if (entry && Array.isArray(entry.completedTopics)) {
+      completedTopicIds = entry.completedTopics
     }
-  })
+  }
 
   const now = new Date()
   const addDays = (d, days) => new Date(d.getTime() + days * 24 * 60 * 60 * 1000)
 
-  // Deterministic rule-based task curriculum
-  const phases = [
-    {
-      phaseNumber: 1,
-      title: 'Phase 1 · Programming Foundations & Core Algorithms',
-      subtitle: `Essential fundamentals tested in ${company.name}'s initial screening`,
-      tasks: [
-        {
-          taskId: 'p1-t1',
-          title: 'Arrays & Two-Pointer Patterns',
-          subject: 'DSA',
-          topic: 'Arrays',
-          detail: 'Master two-pointer and sliding-window problems with linear time complexity.',
-          priority: weakSubjects.has('DSA') ? 'High' : 'Medium',
-          estimatedMinutes: 45,
-          dueDate: addDays(now, 3),
-          completed: false
-        },
-        {
-          taskId: 'p1-t2',
-          title: 'String Manipulation & Frequency Maps',
-          subject: 'DSA',
-          topic: 'Strings',
-          detail: 'Anagrams, palindrome checks, and hash table lookups.',
-          priority: 'Medium',
-          estimatedMinutes: 30,
-          dueDate: addDays(now, 6),
-          completed: false
-        },
-        {
-          taskId: 'p1-t3',
-          title: 'Quantitative Aptitude: Time, Work & Percentages',
-          subject: 'Aptitude',
-          topic: 'Quantitative',
-          detail: `Frequently tested in ${company.name} online assessment round.`,
-          priority: 'High',
-          estimatedMinutes: 40,
-          dueDate: addDays(now, 9),
-          completed: false
+  let phases = []
+
+  // Check if company has verified recruitment rounds
+  if (company.recruitmentRounds && company.recruitmentRounds.length > 0) {
+    const code = (company.code || '').toLowerCase()
+    const predefinedRoundTopicIds = COMPANY_ROUND_TOPIC_MAPPINGS[code]
+
+    phases = company.recruitmentRounds.map((round, rIdx) => {
+      let targetTopicIds = []
+      if (predefinedRoundTopicIds && predefinedRoundTopicIds[rIdx]) {
+        targetTopicIds = predefinedRoundTopicIds[rIdx]
+      } else {
+        // Dynamic assignment based on round name and type
+        const roundText = `${round.name} ${round.description || ''} ${round.roundType || ''}`.toLowerCase()
+        if (roundText.includes('aptitude') || roundText.includes('cognitive') || roundText.includes('nqt') || roundText.includes('verbal')) {
+          targetTopicIds = ['apti-quantitative', 'apti-logical-reasoning', 'apti-verbal-ability']
+        } else if (roundText.includes('coding') || roundText.includes('problem solving') || roundText.includes('round 1')) {
+          targetTopicIds = ['dsa-arrays-strings', 'dsa-linked-lists', 'dsa-trees-bst', 'dsa-graphs']
+        } else if (roundText.includes('core') || roundText.includes('technical') || roundText.includes('case')) {
+          targetTopicIds = ['core-dbms-sql', 'core-os', 'core-oop', 'core-cn']
+        } else if (roundText.includes('hr') || roundText.includes('behavioral') || roundText.includes('managerial') || roundText.includes('leadership')) {
+          targetTopicIds = ['hr-star-framework']
         }
-      ]
-    },
-    {
-      phaseNumber: 2,
-      title: 'Phase 2 · Data Structures & Problem Solving Patterns',
-      subtitle: 'Targeted data structures aligned with past technical interviews',
-      tasks: [
-        {
-          taskId: 'p2-t1',
-          title: 'Linked Lists & Fast/Slow Pointer Traversal',
-          subject: 'DSA',
-          topic: 'Linked Lists',
-          detail: 'Cycle detection, reversing sublists, and merge operations.',
-          priority: 'Medium',
-          estimatedMinutes: 45,
-          dueDate: addDays(now, 14),
-          completed: false
-        },
-        {
-          taskId: 'p2-t2',
-          title: 'Binary Trees & BST Traversals',
-          subject: 'DSA',
-          topic: 'Trees',
-          detail: 'Inorder, preorder, postorder traversals and height/depth computations.',
-          priority: 'High',
-          estimatedMinutes: 60,
-          dueDate: addDays(now, 18),
-          completed: false
-        },
-        {
-          taskId: 'p2-t3',
-          title: 'Graph Traversals (BFS & DFS)',
-          subject: 'DSA',
-          topic: 'Graphs',
-          detail: 'Connected components, topological sort, and shortest path basics.',
-          priority: weakSubjects.has('DSA') ? 'High' : 'Medium',
-          estimatedMinutes: 60,
-          dueDate: addDays(now, 22),
-          completed: false
+      }
+
+      // Filter to topics that are part of this role's required curriculum
+      const matchedTopics = targetTopicIds
+        .map(id => topicMap.get(id))
+        .filter(Boolean)
+
+      const roundTasks = matchedTopics.map((topic, tIdx) => {
+        const isCompleted = completedTopicIds.includes(topic.id)
+        return {
+          taskId: topic.id,
+          topicId: topic.id,
+          title: topic.title,
+          subject: topic.pillar,
+          topic: topic.id,
+          detail: topic.description,
+          priority: topic.importance || 'Medium',
+          estimatedMinutes: topic.estimatedHours ? parseInt(topic.estimatedHours) * 60 : 45,
+          dueDate: addDays(now, (rIdx * 14) + ((tIdx + 1) * 3)),
+          completed: isCompleted,
+          completedAt: isCompleted ? new Date() : null
         }
-      ]
-    },
-    {
-      phaseNumber: 3,
-      title: 'Phase 3 · Core Computer Science Fundamentals',
-      subtitle: 'Theoretical rigor in DBMS, OS, Networks and Object-Oriented Design',
-      tasks: [
-        {
-          taskId: 'p3-t1',
-          title: 'DBMS: Transactions, ACID Properties & Indexing',
-          subject: 'Core CS',
-          topic: 'DBMS',
-          detail: 'Transaction isolation levels, B-Trees vs Hash indexes, and query optimization.',
-          priority: weakSubjects.has('DBMS') ? 'High' : 'Medium',
-          estimatedMinutes: 45,
-          dueDate: addDays(now, 27),
-          completed: false
-        },
-        {
-          taskId: 'p3-t2',
-          title: 'SQL: Complex Joins, Grouping & Window Functions',
-          subject: 'Core CS',
-          topic: 'SQL',
-          detail: 'Inner/outer joins, aggregate filters with HAVING, and ranking queries.',
-          priority: 'High',
-          estimatedMinutes: 35,
-          dueDate: addDays(now, 32),
-          completed: false
-        },
-        {
-          taskId: 'p3-t3',
-          title: 'Operating Systems: Process Scheduling & Synchronization',
-          subject: 'Core CS',
-          topic: 'Operating Systems',
-          detail: 'Deadlocks, semaphores, mutexes, and virtual memory paging.',
-          priority: 'Medium',
-          estimatedMinutes: 40,
-          dueDate: addDays(now, 36),
-          completed: false
+      })
+
+      return {
+        phaseNumber: round.roundNumber || rIdx + 1,
+        roundNumber: round.roundNumber || rIdx + 1,
+        roundType: round.roundType || 'Technical Interview',
+        title: round.name.startsWith('Round') ? round.name : `Round ${round.roundNumber || rIdx + 1}: ${round.name}`,
+        subtitle: round.description || `Required preparation for ${round.name} at ${company.name}`,
+        tasks: roundTasks
+      }
+    })
+
+    // Check if any role topics were missed, and append them to appropriate round
+    const assignedIds = new Set(phases.flatMap(p => p.tasks.map(t => t.taskId)))
+    const unassignedTopics = roleTopics.filter(t => !assignedIds.has(t.id))
+
+    if (unassignedTopics.length > 0) {
+      unassignedTopics.forEach(topic => {
+        // Find best phase by pillar
+        let targetPhase = phases[1] || phases[0]
+        if (topic.pillar === 'Aptitude' && phases[0]) targetPhase = phases[0]
+        else if (topic.pillar === 'DSA' && phases[1]) targetPhase = phases[1]
+        else if ((topic.pillar === 'Core CS' || topic.pillar === 'Web & Technical') && phases[2]) targetPhase = phases[2]
+        else if (topic.pillar === 'HR & Behavioral' && phases[phases.length - 1]) targetPhase = phases[phases.length - 1]
+
+        if (targetPhase) {
+          const isCompleted = completedTopicIds.includes(topic.id)
+          targetPhase.tasks.push({
+            taskId: topic.id,
+            topicId: topic.id,
+            title: topic.title,
+            subject: topic.pillar,
+            topic: topic.id,
+            detail: topic.description,
+            priority: topic.importance || 'Medium',
+            estimatedMinutes: topic.estimatedHours ? parseInt(topic.estimatedHours) * 60 : 45,
+            dueDate: addDays(now, 20),
+            completed: isCompleted,
+            completedAt: isCompleted ? new Date() : null
+          })
         }
-      ]
-    },
-    {
-      phaseNumber: 4,
-      title: 'Phase 4 · Mock Assessments & Company Interview Drills',
-      subtitle: `Simulated rounds mirroring the ${company.name} hiring process`,
-      tasks: [
-        {
-          taskId: 'p4-t1',
-          title: `${company.name} Full-Length Readiness Mock Test`,
-          subject: 'Mock Test',
-          topic: 'Comprehensive',
-          detail: 'Timed assessment covering aptitude, coding, and core CS MCQs.',
-          priority: 'High',
-          estimatedMinutes: 45,
-          dueDate: addDays(now, 42),
-          completed: false
-        },
-        {
-          taskId: 'p4-t2',
-          title: 'Technical Project Walkthrough Preparation',
-          subject: 'Technical',
-          topic: 'Architecture & Projects',
-          detail: 'Structure a 3-minute explanation of your key projects and technical trade-offs.',
-          priority: 'High',
-          estimatedMinutes: 30,
-          dueDate: addDays(now, 46),
-          completed: false
-        },
-        {
-          taskId: 'p4-t3',
-          title: 'Behavioral & STAR Method Interview Practice',
-          subject: 'HR',
-          topic: 'Behavioral',
-          detail: 'Formulate responses for leadership, conflict resolution, and teamwork questions.',
-          priority: 'Medium',
-          estimatedMinutes: 25,
-          dueDate: addDays(now, 50),
-          completed: false
-        }
-      ]
+      })
     }
-  ]
+  } else {
+    // Fallback: 4 structured preparation rounds matching the standard curriculum pillars
+    const pillarRounds = [
+      {
+        roundNumber: 1,
+        title: 'Round 1: Screening & Aptitude Assessment',
+        subtitle: `Quantitative, logical, and verbal fundamentals tested in ${company.name}'s initial screening`,
+        pillar: 'Aptitude'
+      },
+      {
+        roundNumber: 2,
+        title: 'Round 2: Algorithmic Coding & Problem Solving',
+        subtitle: 'Core data structures and algorithms aligned with technical assessments',
+        pillar: 'DSA'
+      },
+      {
+        roundNumber: 3,
+        title: 'Round 3: Core CS & Technical Systems',
+        subtitle: 'DBMS, operating systems, object-oriented design, and framework architecture',
+        pillar: ['Core CS', 'Web & Technical']
+      },
+      {
+        roundNumber: 4,
+        title: 'Round 4: Behavioral & HR Interview',
+        subtitle: 'STAR framework responses, project walkthroughs, and leadership discussions',
+        pillar: 'HR & Behavioral'
+      }
+    ]
+
+    phases = pillarRounds.map(pr => {
+      const allowedPillars = Array.isArray(pr.pillar) ? pr.pillar : [pr.pillar]
+      const matchingTopics = roleTopics.filter(t => allowedPillars.includes(t.pillar))
+
+      const roundTasks = matchingTopics.map((topic, tIdx) => {
+        const isCompleted = completedTopicIds.includes(topic.id)
+        return {
+          taskId: topic.id,
+          topicId: topic.id,
+          title: topic.title,
+          subject: topic.pillar,
+          topic: topic.id,
+          detail: topic.description,
+          priority: topic.importance || 'Medium',
+          estimatedMinutes: topic.estimatedHours ? parseInt(topic.estimatedHours) * 60 : 45,
+          dueDate: addDays(now, (pr.roundNumber * 10) + ((tIdx + 1) * 3)),
+          completed: isCompleted,
+          completedAt: isCompleted ? new Date() : null
+        }
+      })
+
+      return {
+        phaseNumber: pr.roundNumber,
+        roundNumber: pr.roundNumber,
+        title: pr.title,
+        subtitle: pr.subtitle,
+        tasks: roundTasks
+      }
+    })
+  }
+
+  // Calculate unique topic overall progress
+  const allTasks = phases.flatMap(p => p.tasks)
+  const uniqueTaskIds = [...new Set(allTasks.map(t => t.taskId))]
+  const uniqueCompleted = [...new Set(allTasks.filter(t => t.completed).map(t => t.taskId))]
+  const progressPercentage = uniqueTaskIds.length > 0
+    ? Math.round((uniqueCompleted.length / uniqueTaskIds.length) * 100)
+    : 0
 
   // Check if an existing roadmap exists for this user and company
   let roadmap = await Roadmap.findOne({ user: userId, company: companyId })
   if (roadmap) {
-    // Preserve any already completed task statuses matching taskIds
-    const completedTaskIds = new Set()
-    roadmap.phases.forEach(p => {
-      p.tasks.forEach(t => {
-        if (t.completed) completedTaskIds.add(t.taskId)
-      })
-    })
-
-    phases.forEach(p => {
-      p.tasks.forEach(t => {
-        if (completedTaskIds.has(t.taskId)) {
-          t.completed = true
-          t.completedAt = new Date()
-        }
-      })
-    })
-
-    roadmap.role = roleTitle || roadmap.role
+    roadmap.role = role
     roadmap.availableWeeks = availableWeeks
     roadmap.targetDate = addDays(now, availableWeeks * 7)
     roadmap.phases = phases
-
-    const allTasks = phases.flatMap(p => p.tasks)
-    const doneTasks = allTasks.filter(t => t.completed)
-    roadmap.progressPercentage = allTasks.length > 0 ? Math.round((doneTasks.length / allTasks.length) * 100) : 0
+    roadmap.progressPercentage = progressPercentage
 
     await roadmap.save()
     return roadmap
@@ -231,11 +271,11 @@ export async function generateRoadmapForStudent(userId, companyId, roleTitle, av
   roadmap = await Roadmap.create({
     user: userId,
     company: companyId,
-    role: roleTitle || company.roles[0] || 'Software Engineer',
+    role: role,
     availableWeeks,
     targetDate: addDays(now, availableWeeks * 7),
     phases,
-    progressPercentage: 0
+    progressPercentage
   })
 
   return roadmap

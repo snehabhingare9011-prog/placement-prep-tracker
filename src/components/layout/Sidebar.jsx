@@ -6,7 +6,6 @@ import {
   FileCheck2,
   Milestone,
   Target,
-  BarChart3,
   FileText,
   Sparkles,
   GraduationCap,
@@ -96,15 +95,6 @@ export function Sidebar({ mobileOpen, closeMobile }) {
           >
             <Target size={18} />
             <span>Readiness Score</span>
-          </NavLink>
-
-          <NavLink
-            to="/analytics"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={closeMobile}
-          >
-            <BarChart3 size={18} />
-            <span>Progress Analytics</span>
           </NavLink>
         </nav>
 

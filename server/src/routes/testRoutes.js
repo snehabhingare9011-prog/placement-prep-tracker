@@ -9,6 +9,7 @@ import {
   submitTest,
   getTestResults,
   getTestHistory,
+  getMockTestInsights,
   createTest,
   updateTest,
   deleteTest
@@ -37,6 +38,7 @@ const router = Router()
 // Test discovery
 router.get('/', optionalAuth, getTests)
 router.get('/history', authenticate, getTestHistory)
+router.get('/insights', authenticate, getMockTestInsights)
 router.get('/:id', optionalAuth, getTestById)
 
 // Test session and execution

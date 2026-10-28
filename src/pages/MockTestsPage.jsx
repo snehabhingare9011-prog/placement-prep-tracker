@@ -38,7 +38,7 @@ export function MockTestsPage() {
     if (targetCompanyId) {
       setActiveTab('target')
     }
-  }, [targetCompanyId])
+  }, [targetCompanyId, targetRole])
 
   useEffect(() => {
     async function fetchTests() {
@@ -55,7 +55,7 @@ export function MockTestsPage() {
       }
     }
     fetchTests()
-  }, [targetCompanyId])
+  }, [targetCompanyId, targetRole])
 
   const handleStartExam = async () => {
     if (!selectedTestForStart) return
@@ -76,11 +76,18 @@ export function MockTestsPage() {
 
   const targetTests = tests.filter(test => {
     if (!targetCompanyId) return false
-    const testCompId = test.company?._id || test.company
-    return testCompId && testCompId.toString() === targetCompanyId.toString()
+    const testCompId = (test.company?._id || test.company)?.toString()
+    const matchesCompany = testCompId === targetCompanyId.toString()
+    const matchesRole = !test.role || !targetRole || test.role.toLowerCase() === targetRole.toLowerCase()
+    return matchesCompany && matchesRole
   })
 
-  const displayedTests = (activeTab === 'target' && targetCompanyId) ? targetTests : tests
+  // General mock tests available to all students
+  const generalTests = tests.filter(test => !test.company)
+
+  const displayedTests = (activeTab === 'target' && targetCompanyId)
+    ? (targetTests.length > 0 ? targetTests : (generalTests.length > 0 ? generalTests : []))
+    : tests
 
   return (
     <div className="mock-tests-page">
@@ -117,7 +124,7 @@ export function MockTestsPage() {
               transition: 'all 0.15s ease'
             }}
           >
-            <Sparkles size={14} /> Target Company Tests ({targetCompanyName}) · {targetTests.length}
+            <Sparkles size={14} /> Target Assessments ({targetCompanyName} · {targetRole}) · {targetTests.length}
           </button>
         )}
 
@@ -157,10 +164,10 @@ export function MockTestsPage() {
         }}>
           <Building2 size={36} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>
-            No assessments tagged specifically for {targetCompanyName} yet
+            No resources available for this target yet.
           </h3>
           <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
-            You can take general mock assessments across DSA, Aptitude, and CS fundamentals while specific company tests are calibrated.
+            No mock assessments found for {targetCompanyName} ({targetRole}). You can browse all available mock tests or change your target.
           </p>
           <button
             type="button"
@@ -173,7 +180,9 @@ export function MockTestsPage() {
       ) : (
         <div className="tests-grid">
           {displayedTests.map(test => {
-            const isTargetMatch = targetCompanyId && (test.company?._id || test.company)?.toString() === targetCompanyId.toString()
+            const isTargetMatch = targetCompanyId &&
+              (test.company?._id || test.company)?.toString() === targetCompanyId.toString() &&
+              (!test.role || !targetRole || test.role.toLowerCase() === targetRole.toLowerCase())
             return (
               <article key={test._id} className="mock-test-card" style={isTargetMatch ? { borderColor: '#93c5fd' } : {}}>
                 <div className="test-card-header">

@@ -2,18 +2,20 @@ import { Test } from '../models/Test.js'
 import { TestAttempt } from '../models/TestAttempt.js'
 import { ActivityLog } from '../models/ActivityLog.js'
 import { evaluateTestAttempt } from '../services/testEvaluationService.js'
+import { generateMockTestInsights } from '../services/mockTestInsightsService.js'
 
 // @desc Get mock tests list
 // @route GET /api/v1/tests
 // @access Public / Private
 export async function getTests(req, res, next) {
   try {
-    const { category, difficulty, companyId } = req.query
+    const { category, difficulty, companyId, role } = req.query
     const filter = { isPublished: true }
 
     if (category && category !== 'All') filter.category = category
     if (difficulty && difficulty !== 'All') filter.difficulty = difficulty
     if (companyId) filter.company = companyId
+    if (role && role !== 'All') filter.role = role
 
     const tests = await Test.find(filter)
       .populate('company', 'name code mark color')
@@ -418,6 +420,22 @@ export async function deleteTest(req, res, next) {
     const test = await Test.findByIdAndDelete(req.params.id)
     if (!test) return res.status(404).json({ success: false, message: 'Test not found.' })
     res.json({ success: true, message: 'Test deleted.' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// @desc Get mock test strengths and areas to improve
+// @route GET /api/v1/tests/insights
+// @access Private
+export async function getMockTestInsights(req, res, next) {
+  try {
+    const { companyId, role } = req.query
+    const insights = await generateMockTestInsights(req.user._id, companyId, role)
+    res.json({
+      success: true,
+      insights
+    })
   } catch (error) {
     next(error)
   }

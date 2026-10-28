@@ -534,6 +534,14 @@ export async function seedDatabase() {
     targetRoles: ['Full Stack Developer', 'Software Engineer'],
     targetCompany: companyMap.get('accenture')._id,
     currentTargetRole: 'Full Stack Developer',
+    completedTopics: ['apti-quantitative', 'dsa-arrays-strings'],
+    targetProgress: [
+      {
+        company: companyMap.get('accenture')._id,
+        role: 'Full Stack Developer',
+        completedTopics: ['apti-quantitative', 'dsa-arrays-strings']
+      }
+    ],
     status: 'active'
   })
   await studentUser.save()
@@ -681,132 +689,169 @@ export async function seedDatabase() {
     notes: 'Revise LRU Cache before Amazon and Google rounds.'
   })
 
-  // 9. Seed Student Roadmap
+  // 9. Seed Student Roadmap organized by Accenture's verified interview rounds
   await Roadmap.create({
     user: studentUser._id,
     company: companyMap.get('accenture')._id,
     role: 'Full Stack Developer',
     availableWeeks: 8,
     targetDate: new Date(Date.now() + 56 * 24 * 60 * 60 * 1000),
-    progressPercentage: 42,
+    progressPercentage: 20,
     phases: [
       {
         phaseNumber: 1,
-        title: 'Phase 1 · Programming Foundations & Core Algorithms',
-        subtitle: "Essential fundamentals tested in Accenture's screening assessment",
+        roundNumber: 1,
+        roundType: 'Online Assessment',
+        title: 'Round 1: Cognitive & Technical Assessment',
+        subtitle: 'Analytical, verbal reasoning and pseudocode test',
         tasks: [
           {
-            taskId: 'p1-t1',
-            title: 'Arrays & Two-Pointer Patterns',
-            subject: 'DSA',
-            topic: 'Arrays',
-            detail: 'Master two-pointer and sliding-window patterns with linear time complexity.',
+            taskId: 'apti-quantitative',
+            topicId: 'apti-quantitative',
+            title: 'Quantitative Aptitude: Time, Work & Percentages',
+            subject: 'Aptitude',
+            topic: 'apti-quantitative',
+            detail: 'Frequently tested in campus online assessments. Covers work equivalences, speed-distance-time, percentages, and profit & loss.',
             priority: 'High',
             estimatedMinutes: 45,
             completed: true,
             completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
           },
           {
-            taskId: 'p1-t2',
-            title: 'String Manipulation & Frequency Maps',
-            subject: 'DSA',
-            topic: 'Strings',
-            detail: 'Anagrams, palindrome checks, and hash table lookups.',
-            priority: 'Medium',
-            estimatedMinutes: 30,
-            completed: true,
-            completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-          },
-          {
-            taskId: 'p1-t3',
-            title: 'Quantitative Aptitude: Time, Work & Percentages',
+            taskId: 'apti-logical-reasoning',
+            topicId: 'apti-logical-reasoning',
+            title: 'Logical Reasoning: Blood Relations, Coding-Decoding & Puzzles',
             subject: 'Aptitude',
-            topic: 'Quantitative',
-            detail: 'Practice 20 quantitative problems covering work and speeds.',
+            topic: 'apti-logical-reasoning',
+            detail: 'Critical screening section for Accenture, TCS NQT, Infosys, and Deloitte rounds.',
             priority: 'High',
             estimatedMinutes: 40,
+            completed: false
+          },
+          {
+            taskId: 'apti-verbal-ability',
+            topicId: 'apti-verbal-ability',
+            title: 'Verbal Ability: Sentence Correction & Comprehension',
+            subject: 'Aptitude',
+            topic: 'apti-verbal-ability',
+            detail: 'Grammar rules, sentence completion, para jumbles, and reading comprehension.',
+            priority: 'Medium',
+            estimatedMinutes: 30,
             completed: false
           }
         ]
       },
       {
         phaseNumber: 2,
-        title: 'Phase 2 · Data Structures & Backend APIs',
-        subtitle: 'Targeted data structures aligned with full stack development roles',
+        roundNumber: 2,
+        roundType: 'Online Assessment',
+        title: 'Round 2: Coding Assessment',
+        subtitle: '2 algorithmic questions in 45 minutes',
         tasks: [
           {
-            taskId: 'p2-t1',
-            title: 'Linked Lists & Pointer Traversal',
+            taskId: 'dsa-arrays-strings',
+            topicId: 'dsa-arrays-strings',
+            title: 'Arrays & Strings: Two-Pointer & Sliding Window',
             subject: 'DSA',
-            topic: 'Linked Lists',
-            detail: 'Cycle detection, reversing sublists, and merge operations.',
-            priority: 'Medium',
-            estimatedMinutes: 45,
-            completed: true,
-            completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-          },
-          {
-            taskId: 'p2-t2',
-            title: 'Graph Traversals (BFS & DFS)',
-            subject: 'DSA',
-            topic: 'Graphs',
-            detail: 'Address identified weak area: cycle detection and topological sorting.',
+            topic: 'dsa-arrays-strings',
+            detail: 'Core algorithmic patterns: two-pointers, sliding window, prefix sums, and frequency hashmaps.',
             priority: 'High',
             estimatedMinutes: 60,
+            completed: true,
+            completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+          },
+          {
+            taskId: 'dsa-linked-lists',
+            topicId: 'dsa-linked-lists',
+            title: 'Linked Lists: Cycle Detection & Reversals',
+            subject: 'DSA',
+            topic: 'dsa-linked-lists',
+            detail: 'Singly and doubly linked lists, Floyd fast/slow cycle detection, reversing sublists, and merge operations.',
+            priority: 'Medium',
+            estimatedMinutes: 45,
             completed: false
           }
         ]
       },
       {
         phaseNumber: 3,
-        title: 'Phase 3 · Core Computer Science & Database Systems',
-        subtitle: 'Relational databases, SQL queries and concurrency control',
+        roundNumber: 3,
+        roundType: 'Online Assessment',
+        title: 'Round 3: Communication Assessment',
+        subtitle: 'Interactive verbal fluency and listening test',
         tasks: [
           {
-            taskId: 'p3-t1',
-            title: 'DBMS: Transactions, ACID Properties & Indexing',
-            subject: 'Core CS',
-            topic: 'DBMS',
-            detail: 'Revise ACID principles and B-Tree indexing.',
+            taskId: 'apti-verbal-ability',
+            topicId: 'apti-verbal-ability',
+            title: 'Verbal Fluency & Listening Comprehension',
+            subject: 'Aptitude',
+            topic: 'apti-verbal-ability',
+            detail: 'Verbal fluency, pronunciation, and listening comprehension drills.',
             priority: 'Medium',
-            estimatedMinutes: 45,
-            completed: true,
-            completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-          },
-          {
-            taskId: 'p3-t2',
-            title: 'SQL: Aggregations & Complex Joins',
-            subject: 'Core CS',
-            topic: 'SQL',
-            detail: 'Practice writing grouping queries with HAVING and window functions.',
-            priority: 'High',
-            estimatedMinutes: 35,
+            estimatedMinutes: 30,
             completed: false
           }
         ]
       },
       {
         phaseNumber: 4,
-        title: 'Phase 4 · Placement Mock Assessments & Interview Stories',
-        subtitle: 'Full-length simulations and STAR behavioral preparation',
+        roundNumber: 4,
+        roundType: 'HR Interview',
+        title: 'Round 4: Technical & HR Discussion',
+        subtitle: 'Final-year project review, web frameworks and adaptability',
         tasks: [
           {
-            taskId: 'p4-t1',
-            title: 'Accenture Full Stack Mock Assessment',
-            subject: 'Mock Test',
-            topic: 'Comprehensive',
-            detail: 'Complete full 30-minute practice test under exam timing.',
+            taskId: 'core-dbms-sql',
+            topicId: 'core-dbms-sql',
+            title: 'DBMS: Transactions, ACID Properties & SQL Queries',
+            subject: 'Core CS',
+            topic: 'core-dbms-sql',
+            detail: 'ACID transaction management, isolation levels, Normalization (1NF to BCNF), and SQL joins.',
             priority: 'High',
-            estimatedMinutes: 30,
+            estimatedMinutes: 45,
             completed: false
           },
           {
-            taskId: 'p4-t2',
-            title: 'Prepare Final-Year Project Walkthrough',
-            subject: 'Technical',
-            topic: 'Architecture & Projects',
-            detail: 'Draft concise explanation of API design, caching, and database schemas.',
+            taskId: 'core-oop',
+            topicId: 'core-oop',
+            title: 'Object-Oriented Programming (OOP) & Design Principles',
+            subject: 'Core CS',
+            topic: 'core-oop',
+            detail: 'The 4 pillars (Encapsulation, Abstraction, Inheritance, Polymorphism), and SOLID principles.',
             priority: 'High',
+            estimatedMinutes: 40,
+            completed: false
+          },
+          {
+            taskId: 'web-javascript-react',
+            topicId: 'web-javascript-react',
+            title: 'Modern JavaScript & React.js Frontend Architecture',
+            subject: 'Web & Technical',
+            topic: 'web-javascript-react',
+            detail: 'ES6+ syntax, asynchronous programming, React hooks, and component lifecycle.',
+            priority: 'High',
+            estimatedMinutes: 50,
+            completed: false
+          },
+          {
+            taskId: 'web-backend-apis',
+            topicId: 'web-backend-apis',
+            title: 'Backend Engineering: Node.js, Express & RESTful APIs',
+            subject: 'Web & Technical',
+            topic: 'web-backend-apis',
+            detail: 'Express routing, middleware architecture, JWT authentication, and database integration.',
+            priority: 'High',
+            estimatedMinutes: 50,
+            completed: false
+          },
+          {
+            taskId: 'hr-star-framework',
+            topicId: 'hr-star-framework',
+            title: 'HR & Behavioral: STAR Method & Project Walkthrough',
+            subject: 'HR & Behavioral',
+            topic: 'hr-star-framework',
+            detail: 'Structure interview answers using Situation, Task, Action, Result. Prepare project walkthroughs.',
+            priority: 'Medium',
             estimatedMinutes: 30,
             completed: false
           }

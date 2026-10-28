@@ -26,11 +26,10 @@ export function CompanyGuidePage() {
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState(null)
   const [roles, setRoles] = useState([])
-  const [questions, setQuestions] = useState([])
   const [tests, setTests] = useState([])
   const [drives, setDrives] = useState([])
   const [userProgress, setUserProgress] = useState(null)
-  const [activeTab, setActiveTab] = useState('process') // 'process' | 'questions' | 'tests' | 'eligibility'
+  const [activeTab, setActiveTab] = useState('process') // 'process' | 'tests' | 'eligibility'
 
   useEffect(() => {
     async function loadCompanyDetails() {
@@ -142,13 +141,6 @@ export function CompanyGuidePage() {
         </button>
         <button
           type="button"
-          className={activeTab === 'questions' ? 'active' : ''}
-          onClick={() => setActiveTab('questions')}
-        >
-          Company Questions ({questions.length})
-        </button>
-        <button
-          type="button"
           className={activeTab === 'tests' ? 'active' : ''}
           onClick={() => setActiveTab('tests')}
         >
@@ -218,38 +210,7 @@ export function CompanyGuidePage() {
         </section>
       )}
 
-      {/* Tab 2: Company Tagged Questions */}
-      {activeTab === 'questions' && (
-        <section className="guide-section">
-          <h2>High-Frequency Questions for {company.name}</h2>
-          <div className="tagged-questions-grid">
-            {questions.length > 0 ? (
-              questions.map(q => (
-                <div key={q._id} className="tagged-q-card">
-                  <div className="tagged-q-head">
-                    <span className={`difficulty-badge ${q.difficulty.toLowerCase()}`}>
-                      {q.difficulty}
-                    </span>
-                    <span className="topic-text">{q.subject} · {q.topic}</span>
-                  </div>
-                  <h3>{q.title}</h3>
-                  <p>{q.statement.slice(0, 120)}...</p>
-                  <div className="tagged-q-footer">
-                    <small>Est. {q.estimatedTimeMinutes} min</small>
-                    <Link to={`/company-prep?company=${company._id}`} className="button secondary" style={{ padding: '6px 12px', fontSize: '11px' }}>
-                      Study Topic <ArrowRight size={13} />
-                    </Link>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="empty-copy">No specific questions tagged to this company yet.</p>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Tab 3: Mock Tests */}
+      {/* Tab 2: Mock Tests */}
       {activeTab === 'tests' && (
         <section className="guide-section">
           <h2>Diagnostic Tests Aligned with {company.name}</h2>

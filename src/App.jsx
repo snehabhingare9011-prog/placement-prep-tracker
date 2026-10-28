@@ -16,10 +16,8 @@ import MockExamPage from './pages/MockExamPage'
 import MockResultPage from './pages/MockResultPage'
 import RoadmapPage from './pages/RoadmapPage'
 import ReadinessPage from './pages/ReadinessPage'
-import AnalyticsPage from './pages/AnalyticsPage'
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage'
 import AiInterviewPage from './pages/AiInterviewPage'
-import PracticePage from './pages/PracticePage'
 import PlacementDrivesPage from './pages/PlacementDrivesPage'
 import PlacementPortalPage from './pages/PlacementPortalPage'
 import AdminPage from './pages/AdminPage'
@@ -59,7 +57,7 @@ export function App() {
             <Route path="/mock-result/:attemptId" element={<MockResultPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/readiness" element={<ReadinessPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/analytics" element={<Navigate to="/readiness" replace />} />
             <Route path="/practice" element={<Navigate to="/company-prep" replace />} />
             <Route path="/placement-drives" element={<PlacementDrivesPage />} />
             <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />

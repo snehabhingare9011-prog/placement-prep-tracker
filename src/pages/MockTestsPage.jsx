@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   FileCheck2,
   Clock,
@@ -22,6 +22,8 @@ import api from '../api/client'
 export function MockTestsPage() {
   const { user, showToast } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const targetTestId = searchParams.get('testId')
 
   const targetCompanyId = user?.targetCompany?._id || user?.targetCompany
   const targetCompanyName = user?.targetCompany?.name || 'Target Company'
@@ -56,6 +58,26 @@ export function MockTestsPage() {
     }
     fetchTests()
   }, [targetCompanyId, targetRole])
+
+  // Deep linking to specific test from notification actionUrl
+  useEffect(() => {
+    if (targetTestId && tests.length > 0) {
+      const found = tests.find(t => t._id === targetTestId)
+      if (found) {
+        const isInTarget = targetCompanyId && (found.company?._id || found.company)?.toString() === targetCompanyId.toString()
+        if (!isInTarget && activeTab === 'target') {
+          setActiveTab('all')
+        }
+        const timer = setTimeout(() => {
+          const el = document.getElementById(`test-${targetTestId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 350)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [targetTestId, tests, targetCompanyId, activeTab])
 
   const handleStartExam = async () => {
     if (!selectedTestForStart) return
@@ -211,7 +233,12 @@ export function MockTestsPage() {
             const isTargetMatch = targetCompanyId &&
               (test.company?._id || test.company)?.toString() === targetCompanyId.toString()
             return (
-              <article key={test._id} className="mock-test-card" style={isTargetMatch ? { borderColor: '#93c5fd' } : {}}>
+              <article
+                key={test._id}
+                id={`test-${test._id}`}
+                className={`mock-test-card ${targetTestId === test._id ? 'test-card-highlighted' : ''}`}
+                style={isTargetMatch ? { borderColor: '#93c5fd' } : {}}
+              >
                 <div className="test-card-header">
                   <div className="test-badge-row">
                     {test.company && <CompanyMark company={test.company} />}

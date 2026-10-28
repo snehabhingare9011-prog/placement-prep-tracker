@@ -9,6 +9,7 @@ import readinessRoutes from './readinessRoutes.js'
 import placementRoutes from './placementRoutes.js'
 import adminRoutes from './adminRoutes.js'
 import curriculumRoutes from './curriculumRoutes.js'
+import notificationRoutes from './notificationRoutes.js'
 
 const router = Router()
 
@@ -44,5 +45,6 @@ router.use('/announcements', (req, res, next) => {
 })
 router.use('/admin', adminRoutes)
 router.use('/curriculum', curriculumRoutes)
+router.use('/notifications', notificationRoutes)
 
 export default router

@@ -21,6 +21,7 @@ import AiInterviewPage from './pages/AiInterviewPage'
 import PlacementDrivesPage from './pages/PlacementDrivesPage'
 import PlacementPortalPage from './pages/PlacementPortalPage'
 import AdminPage from './pages/AdminPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 export function App() {
   return (
@@ -60,6 +61,7 @@ export function App() {
             <Route path="/analytics" element={<Navigate to="/readiness" replace />} />
             <Route path="/practice" element={<Navigate to="/company-prep" replace />} />
             <Route path="/placement-drives" element={<PlacementDrivesPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
             <Route path="/ai-interview" element={<AiInterviewPage />} />
 

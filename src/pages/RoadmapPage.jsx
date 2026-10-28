@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useOutletContext } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import {
   Milestone,
   CheckCircle2,
@@ -35,6 +35,7 @@ import { mapQuestionToHubTopicId } from '../utils/topicMapping'
 export function RoadmapPage() {
   const { user, showToast } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const outletContext = useOutletContext()
   const onOpenTarget = outletContext?.onOpenTarget
 
@@ -111,6 +112,25 @@ export function RoadmapPage() {
     }
     loadRoadmapAndTopics()
   }, [targetCompanyId, targetRole])
+
+  // Handle deep-link scrolling to specific recruitment round from notification actionUrl
+  useEffect(() => {
+    const roundParam = searchParams.get('round')
+    if (roundParam && roadmap?.phases) {
+      const rNum = parseInt(roundParam, 10)
+      const targetIdx = roadmap.phases.findIndex((p, idx) => (p.roundNumber || idx + 1) === rNum)
+      if (targetIdx !== -1) {
+        setCollapsedRounds(prev => ({ ...prev, [targetIdx]: false }))
+        const timer = setTimeout(() => {
+          const el = document.getElementById(`stage-${rNum}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 350)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [searchParams, roadmap])
 
   const toggleRoundCollapse = (roundIndex) => {
     setCollapsedRounds(prev => ({
@@ -553,7 +573,7 @@ export function RoadmapPage() {
           }
 
           return (
-            <div key={phase.phaseNumber || pIdx} className="journey-stage-row">
+            <div key={phase.phaseNumber || pIdx} id={`stage-${phase.roundNumber || pIdx + 1}`} className="journey-stage-row">
               {/* Timeline Spine & Stage Node Indicator */}
               <div className="journey-stage-spine">
                 <div

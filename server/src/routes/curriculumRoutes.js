@@ -5,6 +5,7 @@ import User from '../models/User.js'
 import { Roadmap } from '../models/Roadmap.js'
 import { isPhaseUnlocked } from '../controllers/roadmapController.js'
 import { getCurriculumForCompany, COMPANY_CURRICULUM } from '../services/curriculumService.js'
+import { syncRealNotificationsForUser } from '../services/notificationService.js'
 
 const router = Router()
 
@@ -227,6 +228,12 @@ router.patch('/toggle-topic', authenticate, async (req, res) => {
       totalTopics = curriculum.totalTopics
       const completedCount = curriculum.topics.filter(t => completedTopics.includes(t.id)).length
       progressPercentage = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0
+    }
+
+    if (isCompleted) {
+      syncRealNotificationsForUser(user).catch(err => {
+        console.error('Failed to sync progress notifications:', err.message)
+      })
     }
 
     res.json({

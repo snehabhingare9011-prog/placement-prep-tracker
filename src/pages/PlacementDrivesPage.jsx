@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Briefcase,
   Calendar,
@@ -17,6 +18,9 @@ import api from '../api/client'
 
 export function PlacementDrivesPage() {
   const { user, showToast } = useAuth()
+  const [searchParams] = useSearchParams()
+  const targetDriveId = searchParams.get('driveId')
+
   const [drives, setDrives] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'upcoming' | 'ongoing'
@@ -40,6 +44,19 @@ export function PlacementDrivesPage() {
     }
     loadDrives()
   }, [statusFilter])
+
+  // Scroll to targeted drive if driveId provided in query param
+  useEffect(() => {
+    if (targetDriveId && drives.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`drive-${targetDriveId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 350)
+      return () => clearTimeout(timer)
+    }
+  }, [targetDriveId, drives])
 
   const handleApply = async (driveId) => {
     setApplyingId(driveId)
@@ -93,7 +110,11 @@ export function PlacementDrivesPage() {
             const isEligible = userCgpa >= minCgpa
 
             return (
-              <article key={drive._id} className="drive-card">
+              <article
+                key={drive._id}
+                id={`drive-${drive._id}`}
+                className={`drive-card ${targetDriveId === drive._id ? 'drive-card-highlighted' : ''}`}
+              >
                 <div className="drive-card-header">
                   <div className="drive-company-badge">
                     <CompanyMark company={drive.company} large />

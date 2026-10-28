@@ -3,6 +3,7 @@ import { TestAttempt } from '../models/TestAttempt.js'
 import { ActivityLog } from '../models/ActivityLog.js'
 import { evaluateTestAttempt } from '../services/testEvaluationService.js'
 import { generateMockTestInsights } from '../services/mockTestInsightsService.js'
+import { syncRealNotificationsForUser } from '../services/notificationService.js'
 
 // @desc Get mock tests list
 // @route GET /api/v1/tests
@@ -320,6 +321,11 @@ export async function submitTest(req, res, next) {
         correct: evaluation.correctCount,
         testId: attempt.test?._id
       }
+    })
+
+    // Immediately trigger real outcome notifications for student
+    syncRealNotificationsForUser(req.user).catch(err => {
+      console.error('Failed to sync post-test notifications:', err.message)
     })
 
     res.json({

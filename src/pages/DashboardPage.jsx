@@ -319,7 +319,7 @@ export function DashboardPage() {
               {/* Highlight 1: Overall Verified Score */}
               <div className="readiness-score-hero-card">
                 <div>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <span className="readiness-score-card-eyebrow">
                     Overall Placement Readiness
                   </span>
 
@@ -378,7 +378,7 @@ export function DashboardPage() {
                       <span className={`readiness-score-badge ${statusBadgeClass}`}>
                         <Award size={12} /> {statusLabel}
                       </span>
-                      <span style={{ fontSize: '11.5px', color: '#64748b', lineHeight: 1.35 }}>
+                      <span className="readiness-score-supporting-text">
                         {hasMockData ? 'Combined syllabus & exam performance' : 'Roadmap checklist verified'}
                       </span>
                     </div>

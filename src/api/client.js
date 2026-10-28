@@ -135,7 +135,15 @@ export const api = {
     updateDrive: (id, data) => client.patch(`/placement/drives/${id}`, data),
     getAnnouncements: () => client.get('/placement/announcements'),
     createAnnouncement: (data) => client.post('/placement/announcements', data),
+    updateAnnouncement: (id, data) => client.patch(`/placement/announcements/${id}`, data),
     deleteAnnouncement: (id) => client.delete(`/placement/announcements/${id}`)
+  },
+
+  // Notifications
+  notifications: {
+    getAll: (params) => client.get('/notifications', { params }),
+    markRead: (id) => client.patch(`/notifications/${id}/read`),
+    markAllRead: (category) => client.patch('/notifications/read-all', { category })
   },
 
   // Admin Workspace

@@ -293,7 +293,7 @@ export function ReadinessPage() {
                   y="55"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize="25"
+                  fontSize="27"
                   fontWeight="800"
                   fill="#0f172a"
                   letterSpacing="-0.5"
@@ -302,10 +302,10 @@ export function ReadinessPage() {
                 </text>
                 <text
                   x="62"
-                  y="74"
+                  y="75"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize="10.5"
+                  fontSize="11"
                   fontWeight="700"
                   fill="#64748b"
                   letterSpacing="0.8"

@@ -23,12 +23,10 @@ import {
   Zap,
   HelpCircle,
   FileText,
-  Code2,
-  Server,
-  Database,
-  Cpu,
-  Activity,
-  Terminal
+  BookOpen,
+  Clock,
+  Award,
+  Building2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import '../saas-landing.css'
@@ -40,7 +38,7 @@ export function LandingPage() {
   const [activeFaq, setActiveFaq] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [legalModal, setLegalModal] = useState(null) // 'privacy' | 'terms' | null
-  const [previewTab, setPreviewTab] = useState('architecture') // 'architecture' | 'workspace'
+  const [previewTab, setPreviewTab] = useState('journey') // 'journey' | 'workspace'
 
   const isAuthenticated = Boolean(user && token)
 
@@ -316,7 +314,7 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Full-Stack Architecture & Platform Engine Showcase */}
+            {/* Student-Focused Placement Workspace Showcase */}
             <div className="saas-hero-visual">
               <div className="saas-mockup-frame">
                 {/* Window Bar with Interactive Tab Switcher */}
@@ -327,15 +325,15 @@ export function LandingPage() {
                     <span className="dot dot-green" />
                   </div>
 
-                  {/* Interactive Architecture / Workspace Tab Switcher */}
+                  {/* Interactive Tab Switcher */}
                   <div className="saas-mockup-tabs">
                     <button
                       type="button"
-                      className={`saas-mockup-tab-btn ${previewTab === 'architecture' ? 'active' : ''}`}
-                      onClick={() => setPreviewTab('architecture')}
+                      className={`saas-mockup-tab-btn ${previewTab === 'journey' ? 'active' : ''}`}
+                      onClick={() => setPreviewTab('journey')}
                     >
-                      <Code2 size={13} />
-                      <span>Code & System Architecture</span>
+                      <Sparkles size={13} />
+                      <span>The 4-Step Placement Journey</span>
                     </button>
                     <button
                       type="button"
@@ -343,118 +341,118 @@ export function LandingPage() {
                       onClick={() => setPreviewTab('workspace')}
                     >
                       <LayoutDashboard size={13} />
-                      <span>Live Placement Workspace</span>
+                      <span>Live Student Dashboard</span>
                     </button>
                   </div>
 
                   <div className="saas-mockup-tag">
                     <span className="pulse-indicator" />
-                    <span>REST API v1 · Port 5000</span>
+                    <span>Placement Season 2026</span>
                   </div>
                 </div>
 
-                {/* TAB 1: CODE & SYSTEM ARCHITECTURE SHOWCASE */}
-                {previewTab === 'architecture' && (
-                  <div className="saas-arch-container">
-                    <div className="saas-arch-head">
+                {/* TAB 1: THE 4-STEP PLACEMENT JOURNEY */}
+                {previewTab === 'journey' && (
+                  <div className="saas-journey-container">
+                    <div className="saas-journey-head">
                       <div>
-                        <span className="saas-arch-eyebrow">FULL-STACK CODEBASE ARCHITECTURE</span>
-                        <h3>Modular Engineering Structure & Data Flow</h3>
+                        <span className="saas-journey-eyebrow">YOUR GUIDED ROADMAP TO GETTING PLACED</span>
+                        <h3>How HireVerse Prepares You for Campus Success</h3>
                       </div>
-                      <div className="saas-arch-badges">
-                        <span className="saas-code-badge"><Terminal size={11} /> Node.js / Express</span>
-                        <span className="saas-code-badge"><Database size={11} /> MongoDB Atlas</span>
-                        <span className="saas-code-badge"><Cpu size={11} /> Deterministic Scoring</span>
-                      </div>
-                    </div>
-
-                    <div className="saas-arch-grid">
-                      {/* Layer 1: Client Application Layer */}
-                      <div className="saas-arch-card">
-                        <div className="saas-arch-card-top">
-                          <div className="saas-arch-icon client">
-                            <Layers size={18} />
-                          </div>
-                          <span className="saas-arch-layer-tag client">Frontend · /src</span>
-                        </div>
-                        <h4>React 18 & Vite SPA Architecture</h4>
-                        <p>Modular client with React Router v6, Context API session state, and responsive glassmorphism UI components.</p>
-                        <div className="saas-arch-chips">
-                          <code>App.jsx</code>
-                          <code>ReadinessPage.jsx</code>
-                          <code>CompanyGuidePage.jsx</code>
-                        </div>
-                      </div>
-
-                      {/* Layer 2: API Gateway & Security */}
-                      <div className="saas-arch-card">
-                        <div className="saas-arch-card-top">
-                          <div className="saas-arch-icon server">
-                            <Server size={18} />
-                          </div>
-                          <span className="saas-arch-layer-tag server">Backend · /server/src</span>
-                        </div>
-                        <h4>Node.js & Express RESTful Engine</h4>
-                        <p>Protected endpoints with JWT session authentication, bcrypt password hashing, and role-based access control.</p>
-                        <div className="saas-arch-chips">
-                          <code>/api/v1/auth</code>
-                          <code>/api/v1/readiness</code>
-                          <code>/api/v1/mock-tests</code>
-                        </div>
-                      </div>
-
-                      {/* Layer 3: Assessment & Anti-Cheat */}
-                      <div className="saas-arch-card">
-                        <div className="saas-arch-card-top">
-                          <div className="saas-arch-icon engine">
-                            <FileCheck2 size={18} />
-                          </div>
-                          <span className="saas-arch-layer-tag engine">Assessment Engine</span>
-                        </div>
-                        <h4>Server Timers & Negative Marking</h4>
-                        <p>Server-side countdown timer enforcement, automatic expiry, timed negative marking (+4 / -1), and anti-cheat tracking.</p>
-                        <div className="saas-arch-chips">
-                          <code>mockTestService.js</code>
-                          <code>testEvaluator.js</code>
-                          <code>+4 / -1 Marking</code>
-                        </div>
-                      </div>
-
-                      {/* Layer 4: Deterministic Readiness Pipeline */}
-                      <div className="saas-arch-card">
-                        <div className="saas-arch-card-top">
-                          <div className="saas-arch-icon database">
-                            <BarChart3 size={18} />
-                          </div>
-                          <span className="saas-arch-layer-tag database">Analytics Engine</span>
-                        </div>
-                        <h4>Deterministic Readiness Scoring</h4>
-                        <p>Unified task deduplication, separation of syllabus progress and exam accuracy, and Atlas cloud synchronization.</p>
-                        <div className="saas-arch-chips">
-                          <code>readinessService.js</code>
-                          <code>User.js</code>
-                          <code>Company.js</code>
-                        </div>
+                      <div className="saas-journey-badges">
+                        <span className="saas-journey-badge"><Building2 size={12} /> Target Company Focus</span>
+                        <span className="saas-journey-badge"><BookOpen size={12} /> Structured Curriculums</span>
+                        <span className="saas-journey-badge"><Award size={12} /> Real Placement Readiness</span>
                       </div>
                     </div>
 
-                    {/* Architecture Telemetry Footer */}
-                    <div className="saas-arch-telemetry">
-                      <div className="saas-telemetry-item">
-                        <span>DATA PIPELINE</span>
-                        <strong>100% Deterministic Evidence</strong>
+                    <div className="saas-journey-grid">
+                      {/* Step 1: Target Selection */}
+                      <div className="saas-journey-card">
+                        <div className="saas-journey-card-top">
+                          <div className="saas-journey-icon icon-blue">
+                            <Target size={18} />
+                          </div>
+                          <span className="saas-journey-step-tag tag-blue">Step 01 · Goal Setting</span>
+                        </div>
+                        <h4>Target Company & Role Selection</h4>
+                        <p>Align your preparation with recruiters like Accenture, Google, Microsoft, and TCS. View official round patterns, difficulty tiers, and required skills.</p>
+                        <div className="saas-journey-chips">
+                          <span className="journey-chip">Accenture · Full Stack</span>
+                          <span className="journey-chip">Google · Software Engineer</span>
+                          <span className="journey-chip">TCS · Digital Track</span>
+                        </div>
                       </div>
-                      <div className="saas-telemetry-item">
-                        <span>DATABASE CLUSTER</span>
-                        <strong>MongoDB Atlas Cloud</strong>
+
+                      {/* Step 2: Curriculum & Hub */}
+                      <div className="saas-journey-card">
+                        <div className="saas-journey-card-top">
+                          <div className="saas-journey-icon icon-indigo">
+                            <BookOpen size={18} />
+                          </div>
+                          <span className="saas-journey-step-tag tag-indigo">Step 02 · Concept Learning</span>
+                        </div>
+                        <h4>Structured Syllabus & Study Hub</h4>
+                        <p>Master high-frequency placement topics with curated video lectures, quick-reference notes, and checklists across DSA, DBMS, and Aptitude.</p>
+                        <div className="saas-journey-chips">
+                          <span className="journey-chip">Curated Video Playlists</span>
+                          <span className="journey-chip">Concept Cheatsheets</span>
+                          <span className="journey-chip">Topic Completion Checklists</span>
+                        </div>
                       </div>
-                      <div className="saas-telemetry-item">
-                        <span>ASSESSMENT EVALUATION</span>
-                        <strong>Server-Side (+4 / -1 Negative Marking)</strong>
+
+                      {/* Step 3: Timed Mock Tests */}
+                      <div className="saas-journey-card">
+                        <div className="saas-journey-card-top">
+                          <div className="saas-journey-icon icon-amber">
+                            <Clock size={18} />
+                          </div>
+                          <span className="saas-journey-step-tag tag-amber">Step 03 · Exam Simulation</span>
+                        </div>
+                        <h4>Realistic Timed Mock Assessments</h4>
+                        <p>Practice under genuine campus exam conditions with strict countdown timers, negative marking (+4 correct, -1 incorrect), and question navigation.</p>
+                        <div className="saas-journey-chips">
+                          <span className="journey-chip">30-Min Countdown Timer</span>
+                          <span className="journey-chip">+4 / -1 Negative Marking</span>
+                          <span className="journey-chip">Detailed Explanations</span>
+                        </div>
                       </div>
-                      <div className="saas-telemetry-item">
-                        <span>TEST SUITE STATUS</span>
-                        <strong>15 / 15 Passed (Automated TAP)</strong>
+
+                      {/* Step 4: Placement Readiness */}
+                      <div className="saas-journey-card">
+                        <div className="saas-journey-card-top">
+                          <div className="saas-journey-icon icon-green">
+                            <Award size={18} />
+                          </div>
+                          <span className="saas-journey-step-tag tag-green">Step 04 · Placement Ready</span>
+                        </div>
+                        <h4>Honest Readiness & Next Action Steps</h4>
+                        <p>Understand your actual preparation with separate syllabus coverage and mock test accuracy. Pinpoint weak topics and follow prioritized revision tasks.</p>
+                        <div className="saas-journey-chips">
+                          <span className="journey-chip">Syllabus vs. Exam Accuracy</span>
+                          <span className="journey-chip">Evidence-Based Weak Spots</span>
+                          <span className="journey-chip">Top 3 Next Actions</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Student-Friendly Value Banner */}
+                    <div className="saas-journey-footer">
+                      <div className="saas-journey-stat">
+                        <span>COMPANY FOCUS</span>
+                        <strong>Accenture, Google, TCS, Infosys & More</strong>
+                      </div>
+                      <div className="saas-journey-stat">
+                        <span>LEARNING PATH</span>
+                        <strong>4-Phase Step-by-Step Roadmaps</strong>
+                      </div>
+                      <div className="saas-journey-stat">
+                        <span>EXAM PRACTICE</span>
+                        <strong>Realistic Timed Assessments (+4 / -1)</strong>
+                      </div>
+                      <div className="saas-journey-stat">
+                        <span>PROGRESS TRACKING</span>
+                        <strong>100% Evidence-Based Feedback</strong>
                       </div>
                     </div>
                   </div>

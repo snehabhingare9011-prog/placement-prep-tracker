@@ -38,6 +38,7 @@ export function DashboardPage() {
   const [topics, setTopics] = useState([])
   const [completedTopicIds, setCompletedTopicIds] = useState([])
   const [mockTests, setMockTests] = useState([])
+  const [assessmentFallbackNote, setAssessmentFallbackNote] = useState(null)
   const [roadmapData, setRoadmapData] = useState(null)
   const [readinessData, setReadinessData] = useState(null)
   const [selectedResourceTopic, setSelectedResourceTopic] = useState(null)
@@ -102,15 +103,25 @@ export function DashboardPage() {
         }
 
         if (testsRes.success && testsRes.tests) {
-          const matchingTests = testsRes.tests.filter(test => {
+          const companyTests = testsRes.tests.filter(test => {
             const testCoId = (test.company?._id || test.company)?.toString()
-            const matchesCompany = testCoId === coId.toString()
-            const matchesRole = !test.role || test.role.toLowerCase() === currentRole.toLowerCase()
-            return matchesCompany && matchesRole
+            return testCoId === coId.toString() && test.isPublished !== false
           })
-          setMockTests(matchingTests)
+          const generalTests = testsRes.tests.filter(test => !test.company && test.isPublished !== false)
+
+          if (companyTests.length > 0) {
+            setMockTests(companyTests)
+            setAssessmentFallbackNote(null)
+          } else if (generalTests.length > 0) {
+            setMockTests(generalTests)
+            setAssessmentFallbackNote(`Showing general placement practice assessments.`)
+          } else {
+            setMockTests([])
+            setAssessmentFallbackNote(null)
+          }
         } else {
           setMockTests([])
+          setAssessmentFallbackNote(null)
         }
       } catch (err) {
         console.error('Failed to load dashboard content:', err)
@@ -228,10 +239,6 @@ export function DashboardPage() {
               <span>Screening Focus</span>
               <strong>{activeCo.recruitmentRounds?.[0]?.name || 'Online Assessment'}</strong>
             </div>
-            <div>
-              <span>Company Tier</span>
-              <strong>{activeCo.difficulty || 'Intermediate'}</strong>
-            </div>
             <Link to={`/companies/${activeCo._id || activeCo.code}`} className="button secondary">
               Company Guide <ArrowRight size={14} />
             </Link>
@@ -250,138 +257,239 @@ export function DashboardPage() {
       )}
 
       {/* Placement Readiness Score Section */}
-      {coId && (
-        <section style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '12px',
-          padding: '22px 24px',
-          marginBottom: '24px',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
-        }}>
-          {/* Section Header */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '16px',
-            flexWrap: 'wrap',
-            marginBottom: '18px'
-          }}>
-            <div>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
-                PLACEMENT READINESS SCORE
-              </span>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '2px 0 0' }}>
-                Where You Stand for {activeCo.name} ({currentRole})
-              </h2>
-              <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
-                Evidence-based readiness calculated strictly from your saved syllabus topics and submitted mock assessments.
-              </p>
-            </div>
+      {coId && (() => {
+        const mockAccuracy = readinessData?.mockPerformance?.overallAccuracy !== undefined && readinessData?.mockPerformance?.overallAccuracy !== null
+          ? readinessData.mockPerformance.overallAccuracy
+          : (readinessData?.metrics?.overallAccuracy !== undefined && readinessData?.metrics?.overallAccuracy !== null
+              ? readinessData.metrics.overallAccuracy
+              : (readinessData?.mockPerformance?.examAccuracyPercentage !== undefined && readinessData?.mockPerformance?.examAccuracyPercentage !== null
+                  ? readinessData.mockPerformance.examAccuracyPercentage
+                  : readinessData?.metrics?.averageTestScore))
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <Link to="/readiness" className="button secondary" style={{ fontSize: '12px', padding: '6px 12px' }}>
-                <TrendingUp size={14} /> Detailed Analysis <ChevronRight size={14} />
-              </Link>
-              <Link to="/roadmap" className="button secondary" style={{ fontSize: '12px', padding: '6px 12px' }}>
-                <Milestone size={14} /> Full Roadmap <ChevronRight size={14} />
-              </Link>
-            </div>
-          </div>
+        const hasMockData = mockAccuracy !== null && mockAccuracy !== undefined
+        const subAttempts = readinessData?.metrics?.submittedAttempts ?? readinessData?.metrics?.testsCompleted ?? 0
+        const unqCompleted = readinessData?.metrics?.uniqueAssessmentsCompleted ?? 0
+        const availTests = readinessData?.metrics?.availableAssessments ?? mockTests.length
 
-          {/* Two Key Preparation Metrics Side by Side */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px'
-          }}>
-            {/* Metric 1: Preparation Progress (Syllabus Coverage) */}
-            <div style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '10px',
-              padding: '16px 18px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  1. Syllabus Progress
-                </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '8px 0 6px' }}>
-                  <strong style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>
-                    {progressPercent}%
-                  </strong>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    ({completedCount} / {totalTopicsCount} topics)
-                  </span>
+        const overallScore = readinessData?.overallScore !== null && readinessData?.overallScore !== undefined
+          ? readinessData.overallScore
+          : (hasMockData ? Math.round((progressPercent * 0.5) + (mockAccuracy * 0.5)) : progressPercent)
+        const isReady = overallScore >= 75
+        const isGood = overallScore >= 50
+        const statusLabel = readinessData?.statusLabel || (isReady ? 'Placement Ready' : (isGood ? 'Good Foundation' : 'In Progress'))
+        const statusBadgeClass = isReady ? 'status-ready' : (isGood ? 'status-good' : 'status-progress')
+        const gaugeTone = isReady ? '#16a34a' : (isGood ? '#2563eb' : '#f59e0b')
+        const circum = 175.93
+        const strokeDashoffset = circum - (circum * Math.min(100, Math.max(0, overallScore))) / 100
+
+        return (
+          <section className="dashboard-readiness-section">
+            {/* Section Header */}
+            <div className="dashboard-readiness-header">
+              <div className="dashboard-readiness-title-area">
+                <div className="dashboard-readiness-icon-badge">
+                  <Target size={22} />
                 </div>
-                <ProgressBar
-                  value={progressPercent}
-                  tone={progressPercent === 100 ? 'green' : 'blue'}
-                  showValue={false}
-                  height={6}
-                />
+                <div>
+                  <span className="dashboard-readiness-eyebrow">
+                    <Sparkles size={12} /> PLACEMENT READINESS SCORE
+                  </span>
+                  <h2 className="dashboard-readiness-title">
+                    Where You Stand for {activeCo.name}
+                    <span className="dashboard-readiness-role-pill">{currentRole}</span>
+                  </h2>
+                  <p className="dashboard-readiness-subcopy">
+                    Evidence-based readiness calculated strictly from your saved syllabus topics and submitted mock assessments.
+                  </p>
+                </div>
               </div>
-              <p style={{ margin: '10px 0 0', fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
-                Calculated strictly from your saved checklist items in Preparation Hub & Roadmap.
-              </p>
+
+              <div className="dashboard-readiness-actions">
+                <Link to="/readiness" className="button secondary" style={{ fontSize: '12px', padding: '6px 14px' }}>
+                  <TrendingUp size={14} /> Detailed Analysis <ChevronRight size={14} />
+                </Link>
+                <Link to="/roadmap" className="button secondary" style={{ fontSize: '12px', padding: '6px 14px' }}>
+                  <Milestone size={14} /> Full Roadmap <ChevronRight size={14} />
+                </Link>
+              </div>
             </div>
 
-            {/* Metric 2: Assessment Performance (Mock Tests) */}
-            <div style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '10px',
-              padding: '16px 18px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  2. Mock-Test Competency
-                </span>
-                <div style={{ margin: '8px 0 6px' }}>
-                  {readinessData?.metrics?.averageTestScore !== null && readinessData?.metrics?.averageTestScore !== undefined ? (
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <strong style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>
-                        {readinessData.metrics.averageTestScore}%
-                      </strong>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        ({readinessData.metrics.submittedAttempts ?? readinessData.metrics.testsCompleted} attempt{(readinessData.metrics.submittedAttempts ?? readinessData.metrics.testsCompleted) === 1 ? '' : 's'} · {readinessData.metrics.uniqueAssessmentsCompleted ?? 0} of {readinessData.metrics.availableAssessments ?? mockTests.length} unique)
+            {/* 3-Column Highlights Grid */}
+            <div className="dashboard-readiness-grid">
+              {/* Highlight 1: Overall Verified Score */}
+              <div className="readiness-score-hero-card">
+                <div>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Overall Placement Readiness
+                  </span>
+
+                  <div className="readiness-score-circular-wrap">
+                    <div className="readiness-score-gauge">
+                      <svg viewBox="0 0 72 72">
+                        <circle
+                          cx="36"
+                          cy="36"
+                          r="28"
+                          fill="transparent"
+                          stroke="#e2e8f0"
+                          strokeWidth="6"
+                        />
+                        <circle
+                          cx="36"
+                          cy="36"
+                          r="28"
+                          fill="transparent"
+                          stroke={gaugeTone}
+                          strokeWidth="6"
+                          strokeDasharray={circum}
+                          strokeDashoffset={strokeDashoffset}
+                          strokeLinecap="round"
+                          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                        />
+                        <text
+                          x="36"
+                          y="33"
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="16"
+                          fontWeight="800"
+                          fill="#0f172a"
+                          transform="rotate(90 36 36)"
+                        >
+                          {overallScore}%
+                        </text>
+                        <text
+                          x="36"
+                          y="47"
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize="7.5"
+                          fontWeight="700"
+                          fill="#64748b"
+                          letterSpacing="0.5"
+                          transform="rotate(90 36 36)"
+                        >
+                          SCORE
+                        </text>
+                      </svg>
+                    </div>
+
+                    <div className="readiness-score-gauge-details">
+                      <span className={`readiness-score-badge ${statusBadgeClass}`}>
+                        <Award size={12} /> {statusLabel}
+                      </span>
+                      <span style={{ fontSize: '11.5px', color: '#64748b', lineHeight: 1.35 }}>
+                        {hasMockData ? 'Combined syllabus & exam performance' : 'Roadmap checklist verified'}
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                <div className="readiness-score-card-footer">
+                  {hasMockData ? (
+                    <span>Formula: 50% Topics Completed + 50% Mock Accuracy</span>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '16px', fontWeight: 700, color: '#94a3b8' }}>
-                        Assessment Pending
-                      </span>
-                    </div>
+                    <span>Take a mock assessment to unlock full combined readiness score</span>
                   )}
                 </div>
-                {readinessData?.metrics?.averageTestScore !== null && readinessData?.metrics?.averageTestScore !== undefined ? (
-                  <ProgressBar
-                    value={readinessData.metrics.averageTestScore}
-                    tone={readinessData.metrics.averageTestScore >= 70 ? 'green' : (readinessData.metrics.averageTestScore < 50 ? 'orange' : 'blue')}
-                    showValue={false}
-                    height={6}
-                  />
-                ) : (
-                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px' }} />
-                )}
               </div>
-              <p style={{ margin: '10px 0 0', fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
-                {readinessData?.metrics?.averageTestScore !== null && readinessData?.metrics?.averageTestScore !== undefined
-                  ? 'Objective average score with negative marking across submitted attempts.'
-                  : 'Take a target mock assessment to establish your verified exam benchmark.'}
-              </p>
+
+              {/* Pillar 1: Syllabus Progress */}
+              <div className="readiness-pillar-metric-card">
+                <div>
+                  <div className="readiness-pillar-card-head">
+                    <span className="pillar-label">
+                      <BookOpen size={13} color="#2563eb" /> 1. Syllabus Roadmap
+                    </span>
+                    <div className="pillar-icon-box" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                      <CheckCircle2 size={15} />
+                    </div>
+                  </div>
+
+                  <div className="readiness-pillar-stat-row">
+                    <span className="readiness-pillar-stat-val">{progressPercent}%</span>
+                    <span className="readiness-pillar-stat-sub">({completedCount} / {totalTopicsCount} topics)</span>
+                  </div>
+
+                  <ProgressBar
+                    value={progressPercent}
+                    tone={progressPercent === 100 ? 'green' : 'blue'}
+                    showValue={false}
+                    height={7}
+                  />
+
+                  <p style={{ margin: '10px 0 0', fontSize: '11.5px', color: '#64748b', lineHeight: 1.45 }}>
+                    Verified completed topics from your target roadmap checklist.
+                  </p>
+                </div>
+
+                <div className="readiness-pillar-action-row">
+                  <span style={{ color: '#64748b' }}>Curriculum coverage</span>
+                  <Link
+                    to={coId ? `/company-prep?company=${coId}` : '/company-prep'}
+                    className="readiness-pillar-action-link"
+                  >
+                    Study in Hub <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Pillar 2: Mock-Test Competency */}
+              <div className="readiness-pillar-metric-card">
+                <div>
+                  <div className="readiness-pillar-card-head">
+                    <span className="pillar-label">
+                      <FileCheck2 size={13} color="#7c3aed" /> 2. Mock Assessments
+                    </span>
+                    <div className="pillar-icon-box" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+                      <TrendingUp size={15} />
+                    </div>
+                  </div>
+
+                  <div className="readiness-pillar-stat-row">
+                    {hasMockData ? (
+                      <>
+                        <span className="readiness-pillar-stat-val">{mockAccuracy}%</span>
+                        <span className="readiness-pillar-stat-sub">
+                          ({subAttempts} attempt{subAttempts === 1 ? '' : 's'} · {unqCompleted}/{availTests} unique)
+                        </span>
+                      </>
+                    ) : (
+                      <span className="readiness-pillar-stat-val" style={{ fontSize: '18px', color: '#94a3b8' }}>
+                        Assessment Pending
+                      </span>
+                    )}
+                  </div>
+
+                  {hasMockData ? (
+                    <ProgressBar
+                      value={mockAccuracy}
+                      tone={mockAccuracy >= 70 ? 'green' : (mockAccuracy < 50 ? 'orange' : 'blue')}
+                      showValue={false}
+                      height={7}
+                    />
+                  ) : (
+                    <div style={{ height: '7px', background: '#e2e8f0', borderRadius: '4px' }} />
+                  )}
+
+                  <p style={{ margin: '10px 0 0', fontSize: '11.5px', color: '#64748b', lineHeight: 1.45 }}>
+                    {hasMockData
+                      ? 'Overall accuracy across latest completed mock assessment attempts.'
+                      : `Take a target assessment (${availTests} available) to establish your exam benchmark.`}
+                  </p>
+                </div>
+
+                <div className="readiness-pillar-action-row">
+                  <span style={{ color: '#64748b' }}>{availTests} test{availTests === 1 ? '' : 's'} available</span>
+                  <Link to="/mock-tests" className="readiness-pillar-action-link">
+                    Take Mock Test <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )
+      })()}
 
       {/* Main Two Columns: Preparation Hub & Mock Tests */}
       <section className="dashboard-grid content-grid-two" style={{ marginBottom: '24px' }}>
@@ -528,7 +636,7 @@ export function DashboardPage() {
           <div className="section-head">
             <div>
               <h2>Mock Tests</h2>
-              <span>Available mock assessments for {activeCo.name} · {currentRole}</span>
+              <span>{assessmentFallbackNote || `Available mock assessments for ${activeCo.name}`}</span>
             </div>
             <Link to="/mock-tests" className="head-link">
               All Tests <ChevronRight size={14} />
@@ -546,10 +654,10 @@ export function DashboardPage() {
               }}>
                 <FileCheck2 size={36} color="#94a3b8" style={{ margin: '0 auto 10px' }} />
                 <h3 style={{ fontSize: '15px', color: '#1e293b', margin: '0 0 6px', fontWeight: 700 }}>
-                  No target-specific assessments yet.
+                  No mock assessments found.
                 </h3>
                 <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.5 }}>
-                  Mock assessments specific to {activeCo.name} ({currentRole}) are not available yet. You can still practice with general assessments.
+                  No published mock assessments are currently available. You can browse all mock tests or change your target.
                 </p>
                 <Link to="/mock-tests" className="button" style={{ fontSize: '11px', display: 'inline-flex' }}>
                   Browse All Mock Tests <ArrowRight size={13} />
@@ -557,31 +665,63 @@ export function DashboardPage() {
               </div>
             ) : (
               <div style={{ display: 'grid', gap: '12px' }}>
-                {mockTests.map(test => (
-                  <article
-                    key={test._id}
-                    className="mock-test-card"
-                    style={{ borderColor: '#bfdbfe', margin: 0, padding: '14px' }}
-                  >
-                    <div className="test-card-header" style={{ marginBottom: '8px' }}>
-                      <div className="test-badge-row">
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          background: '#eff6ff',
-                          color: '#2563eb',
-                          border: '1px solid #bfdbfe',
-                          padding: '1px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 700
-                        }}>
-                          <Sparkles size={10} /> Target Match
-                        </span>
-                        <span className={`difficulty-badge ${test.difficulty?.toLowerCase()}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                          {test.difficulty}
-                        </span>
+                {mockTests.slice(0, 1).map(test => {
+                  const testCoId = (test.company?._id || test.company)?.toString()
+                  const isExactTargetMatch = testCoId === coId?.toString() && (!test.role || test.role.toLowerCase() === currentRole.toLowerCase())
+                  return (
+                    <article
+                      key={test._id}
+                      className="mock-test-card"
+                      style={{ borderColor: isExactTargetMatch ? '#bfdbfe' : '#e2e8f0', margin: 0, padding: '14px' }}
+                    >
+                      <div className="test-card-header" style={{ marginBottom: '8px' }}>
+                        <div className="test-badge-row">
+                          {isExactTargetMatch ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: '#eff6ff',
+                              color: '#2563eb',
+                              border: '1px solid #bfdbfe',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                              fontWeight: 700
+                            }}>
+                              <Sparkles size={10} /> Target Match
+                            </span>
+                          ) : test.company ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: '#f1f5f9',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                              fontWeight: 600
+                            }}>
+                              {test.role || activeCo.name}
+                            </span>
+                          ) : (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: '#f1f5f9',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                              fontWeight: 600
+                            }}>
+                              General Practice
+                            </span>
+                          )}
                       </div>
                       {test.bestAttempt && (
                         <span className="best-score-badge" style={{ fontSize: '11px' }}>
@@ -619,11 +759,12 @@ export function DashboardPage() {
                       <Play size={13} /> Start Assessment
                     </button>
                   </article>
-                ))}
+                )
+              })}
 
                 <div style={{ textAlign: 'center', marginTop: '4px' }}>
                   <Link to="/mock-tests" className="button secondary" style={{ fontSize: '12px', width: '100%', justifyContent: 'center' }}>
-                    View All Mock Tests <ArrowRight size={13} />
+                    View All Mock Assessments {mockTests.length > 1 ? `(${mockTests.length})` : ''} <ArrowRight size={13} />
                   </Link>
                 </div>
               </div>

@@ -43,18 +43,17 @@ export function mapQuestionAreaToHubTopic(topicName, subjectName = '') {
 export async function generateMockTestInsights(userId, companyId = null, role = null) {
   // Available target assessments count
   const allTests = await Test.find({ isPublished: true }).lean().catch(() => [])
-  let availableTests = allTests.filter(t => {
-    if (!companyId) return true
-    const cId = (t.company?._id || t.company)?.toString()
-    if (cId !== companyId.toString()) return false
-    if (!t.role || !role) return true
-    return t.role.toLowerCase() === role.toLowerCase()
-  })
-  if (availableTests.length === 0 && companyId) {
+  let availableTests = []
+  if (companyId) {
     availableTests = allTests.filter(t => {
       const cId = (t.company?._id || t.company)?.toString()
       return cId === companyId.toString()
     })
+    if (availableTests.length === 0) {
+      availableTests = allTests.filter(t => !t.company)
+    }
+  } else {
+    availableTests = allTests.filter(t => !t.company)
   }
   const availableAssessments = availableTests.length
 
@@ -72,24 +71,15 @@ export async function generateMockTestInsights(userId, companyId = null, role = 
     .sort({ submittedAt: -1 })
     .lean()
 
-  // Filter company and role specific attempts strictly (no fallback across companies)
+  // Filter company specific attempts strictly
   let targetFilteredAttempts = attempts
   if (companyId) {
     targetFilteredAttempts = attempts.filter(a => {
       const aCompId = (a.company?._id || a.company || a.test?.company?._id || a.test?.company)?.toString()
-      if (aCompId !== companyId.toString()) return false
-      const aRole = a.role || a.test?.role
-      if (aRole && role) {
-        return aRole.toLowerCase() === role.toLowerCase()
-      }
-      return true
+      return aCompId === companyId.toString()
     })
-
-    if (targetFilteredAttempts.length === 0) {
-      targetFilteredAttempts = attempts.filter(a => {
-        const aCompId = (a.company?._id || a.company || a.test?.company?._id || a.test?.company)?.toString()
-        return aCompId === companyId.toString()
-      })
+    if (targetFilteredAttempts.length === 0 && availableTests.every(t => !t.company)) {
+      targetFilteredAttempts = attempts.filter(a => !a.company && !a.test?.company)
     }
   }
 

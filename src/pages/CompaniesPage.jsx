@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, Filter, ArrowRight, Building2 } from 'lucide-react'
+import { Search, ArrowRight, Building2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
 import PageHeader from '../components/common/PageHeader'
@@ -15,7 +15,6 @@ export function CompaniesPage() {
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [difficulty, setDifficulty] = useState('All')
   const [settingTargetId, setSettingTargetId] = useState(null)
 
   const currentCompanyId = user?.targetCompany?._id || user?.targetCompany
@@ -38,12 +37,11 @@ export function CompaniesPage() {
   }, [])
 
   const filtered = companies.filter(company => {
-    const matchesQuery =
+    return (
       company.name.toLowerCase().includes(query.toLowerCase()) ||
       company.roles.join(' ').toLowerCase().includes(query.toLowerCase()) ||
       company.requiredSkills.join(' ').toLowerCase().includes(query.toLowerCase())
-    const matchesDifficulty = difficulty === 'All' || company.difficulty === difficulty
-    return matchesQuery && matchesDifficulty
+    )
   })
 
   const handlePrepareNow = async (company) => {
@@ -90,19 +88,6 @@ export function CompaniesPage() {
           />
         </label>
 
-        <label className="select-input">
-          <Filter size={16} />
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-          >
-            <option value="All">All Difficulty Tiers</option>
-            <option value="Foundation">Foundation Tier</option>
-            <option value="Intermediate">Intermediate Tier</option>
-            <option value="Advanced">Advanced Tier</option>
-          </select>
-        </label>
-
         <span className="results-count">
           Showing <b>{filtered.length}</b> companies
         </span>
@@ -134,9 +119,6 @@ export function CompaniesPage() {
                 <p className="company-role-subtitle">{company.roles[0] || 'Software Engineer'}</p>
 
                 <div className="company-tags">
-                  <span className={`difficulty-badge ${company.difficulty.toLowerCase()}`}>
-                    {company.difficulty}
-                  </span>
                   <span>{company.recruitmentRounds?.length || 4} Rounds</span>
                 </div>
 
@@ -188,10 +170,10 @@ export function CompaniesPage() {
       ) : (
         <EmptyState
           icon={Building2}
-          title="No companies match your filters"
-          text="Try adjusting your search keywords or clearing difficulty filters."
-          actionText="Reset Filters"
-          onAction={() => { setQuery(''); setDifficulty('All') }}
+          title="No companies found"
+          text="Try adjusting your search keywords."
+          actionText="Clear Search"
+          onAction={() => setQuery('')}
         />
       )}
     </div>

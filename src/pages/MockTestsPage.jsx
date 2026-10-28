@@ -74,20 +74,30 @@ export function MockTestsPage() {
     }
   }
 
-  const targetTests = tests.filter(test => {
+  const companyTests = tests.filter(test => {
     if (!targetCompanyId) return false
     const testCompId = (test.company?._id || test.company)?.toString()
-    const matchesCompany = testCompId === targetCompanyId.toString()
-    const matchesRole = !test.role || !targetRole || test.role.toLowerCase() === targetRole.toLowerCase()
-    return matchesCompany && matchesRole
+    return testCompId === targetCompanyId.toString() && test.isPublished !== false
   })
 
   // General mock tests available to all students
-  const generalTests = tests.filter(test => !test.company)
+  const generalTests = tests.filter(test => !test.company && test.isPublished !== false)
 
-  const displayedTests = (activeTab === 'target' && targetCompanyId)
-    ? (targetTests.length > 0 ? targetTests : (generalTests.length > 0 ? generalTests : []))
-    : tests
+  let displayedTests = tests
+  let fallbackMessage = null
+
+  if (activeTab === 'target' && targetCompanyId) {
+    if (companyTests.length > 0) {
+      displayedTests = companyTests
+    } else if (generalTests.length > 0) {
+      displayedTests = generalTests
+      fallbackMessage = `Showing general campus mock assessments because specific tests for ${targetCompanyName} are not yet published.`
+    } else {
+      displayedTests = []
+    }
+  }
+
+  const activeTargetCount = companyTests.length > 0 ? companyTests.length : generalTests.length
 
   return (
     <div className="mock-tests-page">
@@ -124,7 +134,7 @@ export function MockTestsPage() {
               transition: 'all 0.15s ease'
             }}
           >
-            <Sparkles size={14} /> Target Assessments ({targetCompanyName} · {targetRole}) · {targetTests.length}
+            <Sparkles size={14} /> Target Assessments ({targetCompanyName}) · {activeTargetCount}
           </button>
         )}
 
@@ -150,6 +160,24 @@ export function MockTestsPage() {
         </button>
       </div>
 
+      {fallbackMessage && activeTab === 'target' && displayedTests.length > 0 && (
+        <div style={{
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: '8px',
+          padding: '10px 14px',
+          marginBottom: '20px',
+          fontSize: '12px',
+          color: '#1e40af',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <Sparkles size={14} color="#2563eb" />
+          <span>{fallbackMessage}</span>
+        </div>
+      )}
+
       {loading ? (
         <SkeletonLoader rows={4} height={140} />
       ) : displayedTests.length === 0 ? (
@@ -164,10 +192,10 @@ export function MockTestsPage() {
         }}>
           <Building2 size={36} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>
-            No resources available for this target yet.
+            No mock assessments found.
           </h3>
           <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
-            No mock assessments found for {targetCompanyName} ({targetRole}). You can browse all available mock tests or change your target.
+            No mock assessments are currently published for this target. You can browse all available mock tests or change your target.
           </p>
           <button
             type="button"
@@ -181,8 +209,7 @@ export function MockTestsPage() {
         <div className="tests-grid">
           {displayedTests.map(test => {
             const isTargetMatch = targetCompanyId &&
-              (test.company?._id || test.company)?.toString() === targetCompanyId.toString() &&
-              (!test.role || !targetRole || test.role.toLowerCase() === targetRole.toLowerCase())
+              (test.company?._id || test.company)?.toString() === targetCompanyId.toString()
             return (
               <article key={test._id} className="mock-test-card" style={isTargetMatch ? { borderColor: '#93c5fd' } : {}}>
                 <div className="test-card-header">
@@ -204,9 +231,6 @@ export function MockTestsPage() {
                         <Sparkles size={11} /> Target Match
                       </span>
                     )}
-                    <span className={`difficulty-badge ${test.difficulty?.toLowerCase()}`}>
-                      {test.difficulty}
-                    </span>
                     <span className="category-tag">{test.category}</span>
                   </div>
                   {test.bestAttempt && (

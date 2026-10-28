@@ -145,7 +145,7 @@ describe('Readiness Scoring & Preparation Roadmap Engine', () => {
       .set('Authorization', `Bearer ${studentToken}`)
 
     assert.strictEqual(initialRes.status, 200)
-    assert.strictEqual(initialRes.body.readiness.mockPerformance.availableAssessments, 1)
+    assert.strictEqual(initialRes.body.readiness.mockPerformance.availableAssessments, 2)
     assert.strictEqual(initialRes.body.readiness.mockPerformance.submittedAttempts, 1)
     assert.strictEqual(initialRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 1)
 
@@ -173,7 +173,7 @@ describe('Readiness Scoring & Preparation Roadmap Engine', () => {
       .get('/api/v1/readiness')
       .set('Authorization', `Bearer ${studentToken}`)
 
-    assert.strictEqual(retakeRes.body.readiness.mockPerformance.availableAssessments, 1)
+    assert.strictEqual(retakeRes.body.readiness.mockPerformance.availableAssessments, 2)
     assert.strictEqual(retakeRes.body.readiness.mockPerformance.submittedAttempts, 2)
     assert.strictEqual(retakeRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 1)
 
@@ -186,8 +186,99 @@ describe('Readiness Scoring & Preparation Roadmap Engine', () => {
       .set('Authorization', `Bearer ${studentToken}`)
 
     assert.strictEqual(msftRes.status, 200)
-    assert.strictEqual(msftRes.body.readiness.mockPerformance.availableAssessments, 1)
+    assert.strictEqual(msftRes.body.readiness.mockPerformance.availableAssessments, 3)
     assert.strictEqual(msftRes.body.readiness.mockPerformance.submittedAttempts, 0)
     assert.strictEqual(msftRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 0)
+  })
+
+  test('Readiness & Mock Tests: Google · Software Engineer target counts 3 available assessments and tracks unique completions', async () => {
+    const testsRes = await request.get('/api/v1/tests')
+    const googleCompany = testsRes.body.tests.find(t => t.title.includes('Google'))?.company
+    assert.ok(googleCompany)
+
+    // 1. Initial Google check (0 attempts)
+    const googleRes = await request
+      .get(`/api/v1/readiness?companyId=${googleCompany._id || googleCompany}&role=Software%20Engineer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(googleRes.status, 200)
+    assert.strictEqual(googleRes.body.readiness.mockPerformance.availableAssessments, 3)
+    assert.strictEqual(googleRes.body.readiness.mockPerformance.submittedAttempts, 0)
+    assert.strictEqual(googleRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 0)
+    assert.strictEqual(googleRes.body.readiness.metrics.availableAssessments, 3)
+
+    // Verify all mock tests total is separate (19 total)
+    assert.strictEqual(testsRes.body.tests.length, 19)
+
+    // 2. Student starts and completes 1 Google test
+    const googleSweTest = testsRes.body.tests.find(t => t.title.includes('Google') && t.title.includes('Readiness'))
+    assert.ok(googleSweTest)
+
+    const startRes = await request
+      .post(`/api/v1/tests/${googleSweTest._id}/start`)
+      .set('Authorization', `Bearer ${studentToken}`)
+    assert.strictEqual(startRes.status, 200)
+
+    const submitRes = await request
+      .post(`/api/v1/test-attempts/attempts/${startRes.body.attemptId}/submit`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({
+        answers: googleSweTest.questions.map(qId => ({ questionId: qId, selectedOption: 0 }))
+      })
+    assert.strictEqual(submitRes.status, 200)
+
+    // 3. Re-check Google readiness: available stays 3, submitted is 1, unique completed is 1
+    const afterFirstTest = await request
+      .get(`/api/v1/readiness?companyId=${googleCompany._id || googleCompany}&role=Software%20Engineer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(afterFirstTest.body.readiness.mockPerformance.availableAssessments, 3)
+    assert.strictEqual(afterFirstTest.body.readiness.mockPerformance.submittedAttempts, 1)
+    assert.strictEqual(afterFirstTest.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 1)
+
+    // 4. Retake the exact same Google test
+    const retakeStart = await request
+      .post(`/api/v1/tests/${googleSweTest._id}/start`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    await request
+      .post(`/api/v1/test-attempts/attempts/${retakeStart.body.attemptId}/submit`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({
+        answers: googleSweTest.questions.map(qId => ({ questionId: qId, selectedOption: 0 }))
+      })
+
+    // 5. Re-check: available stays 3, submitted is 2, unique completed stays 1
+    const afterRetake = await request
+      .get(`/api/v1/readiness?companyId=${googleCompany._id || googleCompany}&role=Software%20Engineer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(afterRetake.body.readiness.mockPerformance.availableAssessments, 3)
+    assert.strictEqual(afterRetake.body.readiness.mockPerformance.submittedAttempts, 2)
+    assert.strictEqual(afterRetake.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 1)
+
+    // 6. Complete a second distinct Google test (Frontend)
+    const googleFrontendTest = testsRes.body.tests.find(t => t.title.includes('Google') && t.title.includes('Frontend'))
+    assert.ok(googleFrontendTest)
+
+    const secondStart = await request
+      .post(`/api/v1/tests/${googleFrontendTest._id}/start`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    await request
+      .post(`/api/v1/test-attempts/attempts/${secondStart.body.attemptId}/submit`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({
+        answers: googleFrontendTest.questions.map(qId => ({ questionId: qId, selectedOption: 0 }))
+      })
+
+    // 7. Re-check: available stays 3, submitted is 3, unique completed increments to 2
+    const afterSecondTest = await request
+      .get(`/api/v1/readiness?companyId=${googleCompany._id || googleCompany}&role=Software%20Engineer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(afterSecondTest.body.readiness.mockPerformance.availableAssessments, 3)
+    assert.strictEqual(afterSecondTest.body.readiness.mockPerformance.submittedAttempts, 3)
+    assert.strictEqual(afterSecondTest.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 2)
   })
 })

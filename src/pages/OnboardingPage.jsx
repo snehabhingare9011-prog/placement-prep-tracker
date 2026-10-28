@@ -179,7 +179,7 @@ export function OnboardingPage() {
                           {c.name}
                         </div>
                         <div style={{ fontSize: '11px', color: '#64748b' }}>
-                          {c.difficulty} Tier · {c.roles?.length || 1} roles
+                          {c.roles?.length || 1} available {c.roles?.length === 1 ? 'role' : 'roles'}
                         </div>
                       </div>
                       {isSelected && <CheckCircle2 size={16} color="#2563eb" style={{ flexShrink: 0 }} />}

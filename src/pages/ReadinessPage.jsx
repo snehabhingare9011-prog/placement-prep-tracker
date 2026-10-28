@@ -1,31 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Target,
   ArrowRight,
-  TrendingUp,
-  AlertCircle,
   CheckCircle2,
   FileCheck2,
-  ShieldCheck,
   Milestone,
   BookOpen,
   Building2,
-  ChevronRight,
-  Award,
-  HelpCircle,
-  Clock,
-  Sparkles,
-  AlertTriangle,
-  Flame,
-  Zap,
-  Check,
-  Layers,
-  BarChart2
+  Check
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
-import ProgressBar from '../components/common/ProgressBar'
 import PageHeader from '../components/common/PageHeader'
 import SkeletonLoader from '../components/common/SkeletonLoader'
 import api from '../api/client'
@@ -35,8 +20,8 @@ export function ReadinessPage() {
   const [readiness, setReadiness] = useState(null)
   const [companyDetails, setCompanyDetails] = useState(null)
   const [availableTestCount, setAvailableTestCount] = useState(null)
+  const [availableCompanyTests, setAvailableCompanyTests] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('all') // 'all' | 'weak' | 'strong'
 
   const targetCompanyId = user?.targetCompany?._id || user?.targetCompany
   const targetRole = user?.currentTargetRole || 'Software Engineer'
@@ -63,20 +48,16 @@ export function ReadinessPage() {
         }
 
         if (testsRes.success && Array.isArray(testsRes.tests)) {
-          let matching = testsRes.tests.filter(test => {
-            if (!targetCompanyId) return true
+          let companyTests = testsRes.tests.filter(test => {
+            if (!targetCompanyId) return false
             const testCompId = (test.company?._id || test.company)?.toString()
-            if (testCompId !== targetCompanyId.toString()) return false
-            if (!test.role || !targetRole) return true
-            return test.role.toLowerCase() === targetRole.toLowerCase()
+            return testCompId === targetCompanyId.toString() && test.isPublished !== false
           })
-          if (matching.length === 0 && targetCompanyId) {
-            matching = testsRes.tests.filter(test => {
-              const testCompId = (test.company?._id || test.company)?.toString()
-              return testCompId === targetCompanyId.toString()
-            })
+          if (companyTests.length === 0 && targetCompanyId) {
+            companyTests = testsRes.tests.filter(test => !test.company && test.isPublished !== false)
           }
-          setAvailableTestCount(matching.length)
+          setAvailableTestCount(companyTests.length)
+          setAvailableCompanyTests(companyTests)
         }
       } catch (err) {
         console.error('Failed to load readiness data:', err)
@@ -133,51 +114,58 @@ export function ReadinessPage() {
   const submittedAttempts = mockPerformance.submittedAttempts ?? mockPerformance.testsCompleted ?? readiness?.metrics?.submittedAttempts ?? 0
   const uniqueAssessmentsCompleted = mockPerformance.uniqueAssessmentsCompleted ?? readiness?.metrics?.uniqueAssessmentsCompleted ?? 0
 
-  const hasSubmittedMockTests = submittedAttempts > 0
-  const hasAttemptedQuestions = (mockPerformance.totalAttemptedQuestions || 0) > 0
+  // Section B Assessment List (strictly 1 row per eligible assessment, latest attempt only)
+  const assessmentsList = (mockPerformance.assessmentsList && mockPerformance.assessmentsList.length > 0)
+    ? mockPerformance.assessmentsList
+    : availableCompanyTests.map(test => {
+        const testIdStr = test._id.toString()
+        const recentMatch = (mockPerformance.recentTestHistory || []).find(h => {
+          const hId = (h.test?._id || h.test || h.testId)?.toString()
+          return hId === testIdStr || (h.testTitle && test.title && h.testTitle.trim().toLowerCase() === test.title.trim().toLowerCase())
+        })
+        if (recentMatch) {
+          const correct = recentMatch.correctCount ?? 0
+          const incorrect = recentMatch.incorrectCount ?? 0
+          const attempted = correct + incorrect
+          const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : null
+          return {
+            testId: test._id,
+            title: test.title,
+            status: 'Completed',
+            attempted: true,
+            correctCount: correct,
+            incorrectCount: incorrect,
+            unansweredCount: recentMatch.unansweredCount ?? 0,
+            accuracy,
+            submittedAt: recentMatch.submittedAt
+          }
+        }
+        return {
+          testId: test._id,
+          title: test.title,
+          status: 'Not Attempted',
+          attempted: false,
+          correctCount: 0,
+          incorrectCount: 0,
+          unansweredCount: 0,
+          accuracy: null
+        }
+      })
 
-  const subjectAnalysis = readiness?.subjectAnalysis || []
-  const strongAreas = readiness?.strengths || []
-  const weakAreas = readiness?.weakAreas || []
-  const nextActions = readiness?.nextActions || []
-  const roundReadiness = readiness?.roundReadiness || []
-
-  // Dynamic readiness level badge
-  const readinessTier = preparation.percentage >= 75 && (mockPerformance.averageScorePercentage || 0) >= 70
-    ? { label: 'Placement Ready', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' }
-    : preparation.percentage >= 40 || submittedAttempts >= 2
-    ? { label: 'Advancing Tier', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' }
-    : { label: 'Foundation Tier', color: '#d97706', bg: '#fffbeb', border: '#fef3c7' }
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Strong':
-        return (
-          <span className="status-pill status-strong" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <CheckCircle2 size={12} /> Strong
-          </span>
-        )
-      case 'Needs Focus':
-        return (
-          <span className="status-pill status-needs-focus" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <AlertCircle size={12} /> Needs Focus
-          </span>
-        )
-      case 'Not Enough Data':
-        return (
-          <span className="status-pill status-not-enough" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <HelpCircle size={12} /> Not Enough Data
-          </span>
-        )
-      case 'Not Attempted':
-      default:
-        return (
-          <span className="status-pill status-untested">
-            Not Attempted
-          </span>
-        )
-    }
-  }
+  // Overall Accuracy across latest eligible attempts (unanswered questions excluded)
+  const overallAccuracy = mockPerformance.overallAccuracy !== undefined
+    ? mockPerformance.overallAccuracy
+    : (() => {
+        let totalCorrect = 0
+        let totalAttempted = 0
+        assessmentsList.forEach(a => {
+          if (a.attempted && a.accuracy !== null) {
+            totalCorrect += (a.correctCount || 0)
+            totalAttempted += ((a.correctCount || 0) + (a.incorrectCount || 0))
+          }
+        })
+        return totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : null
+      })()
 
   return (
     <div className="readiness-page">
@@ -206,20 +194,6 @@ export function ReadinessPage() {
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                 CURRENT TARGET
               </span>
-              <span className="status-pill info" style={{ fontSize: '10px', padding: '1px 6px' }}>
-                {activeCo.difficulty || 'Intermediate'} Tier
-              </span>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                color: readinessTier.color,
-                background: readinessTier.bg,
-                border: `1px solid ${readinessTier.border}`,
-                padding: '1px 8px',
-                borderRadius: '12px'
-              }}>
-                {readinessTier.label}
-              </span>
             </div>
             <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: '2px 0' }}>
               {activeCo.name}
@@ -232,6 +206,24 @@ export function ReadinessPage() {
 
         {/* Executive Stats Strip */}
         <div className="readiness-header-stats">
+          <div className="readiness-header-stat-item highlight-score">
+            <span>Readiness Score</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <strong style={{ color: '#2563eb', fontSize: '18px' }}>
+                {readiness?.overallScore !== null && readiness?.overallScore !== undefined ? `${readiness.overallScore}%` : `${preparation.percentage}%`}
+              </strong>
+              <span style={{
+                fontSize: '10.5px',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                background: (readiness?.overallScore ?? preparation.percentage) >= 70 ? '#dcfce7' : ((readiness?.overallScore ?? preparation.percentage) >= 50 ? '#eff6ff' : '#fef3c7'),
+                color: (readiness?.overallScore ?? preparation.percentage) >= 70 ? '#15803d' : ((readiness?.overallScore ?? preparation.percentage) >= 50 ? '#1d4ed8' : '#b45309')
+              }}>
+                {readiness?.statusLabel || ((readiness?.overallScore ?? preparation.percentage) >= 70 ? 'Ready' : ((readiness?.overallScore ?? preparation.percentage) >= 50 ? 'Good' : 'Progress'))}
+              </span>
+            </div>
+          </div>
           <div className="readiness-header-stat-item">
             <span>Roadmap Progress</span>
             <strong>{preparation.completedTopics} / {preparation.totalTopics}</strong>
@@ -256,7 +248,7 @@ export function ReadinessPage() {
         {/* =========================================================================
             SECTION A: My Preparation Progress
             ========================================================================= */}
-        <article className="readiness-section-card" style={{ marginBottom: 0 }}>
+        <article className="readiness-section-card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
           <div className="readiness-card-header">
             <div>
               <span className="section-eyebrow" style={{ color: '#2563eb' }}>
@@ -267,25 +259,84 @@ export function ReadinessPage() {
             <BookOpen size={20} color="#2563eb" />
           </div>
 
-          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.45 }}>
+          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px', lineHeight: 1.45 }}>
             Verified topic completion based on saved checklist items on your preparation roadmap.
           </p>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '10px' }}>
-            <strong style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a' }}>
-              {preparation.percentage}%
-            </strong>
-            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>
-              ({preparation.completedTopics} of {preparation.totalTopics} topics completed)
-            </span>
-          </div>
+          {/* Donut Chart and Topic Summary Box */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '20px',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            marginBottom: '14px'
+          }}>
+            <div style={{ width: '104px', height: '104px', flexShrink: 0, position: 'relative', display: 'grid', placeItems: 'center' }}>
+              <svg width="104" height="104" viewBox="0 0 104 104" style={{ overflow: 'visible' }}>
+                <circle
+                  cx="52"
+                  cy="52"
+                  r="42"
+                  fill="transparent"
+                  stroke="#e2e8f0"
+                  strokeWidth="8.5"
+                />
+                <circle
+                  cx="52"
+                  cy="52"
+                  r="42"
+                  fill="transparent"
+                  stroke={preparation.percentage === 100 ? '#16a34a' : '#2563eb'}
+                  strokeWidth="8.5"
+                  strokeDasharray="263.89"
+                  strokeDashoffset={263.89 - (263.89 * Math.min(100, Math.max(0, preparation.percentage || 0))) / 100}
+                  strokeLinecap="round"
+                  transform="rotate(-90 52 52)"
+                  style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                />
+                <text
+                  x="52"
+                  y="48"
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize="21"
+                  fontWeight="800"
+                  fill="#0f172a"
+                >
+                  {preparation.percentage}%
+                </text>
+                <text
+                  x="52"
+                  y="65"
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize="9.5"
+                  fontWeight="700"
+                  fill="#64748b"
+                  letterSpacing="0.4"
+                >
+                  DONE
+                </text>
+              </svg>
+            </div>
 
-          <ProgressBar
-            value={preparation.percentage}
-            tone={preparation.percentage === 100 ? 'green' : 'blue'}
-            showValue={false}
-            height={9}
-          />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '3px' }}>
+                Syllabus Topic Completion
+              </span>
+              <strong style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '3px' }}>
+                {preparation.completedTopics} of {preparation.totalTopics} Topics
+              </strong>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                {preparation.completedTopics === preparation.totalTopics && preparation.totalTopics > 0
+                  ? 'All syllabus topics have been completed across all sequential preparation rounds.'
+                  : `${preparation.totalTopics - preparation.completedTopics} topic${(preparation.totalTopics - preparation.completedTopics) === 1 ? '' : 's'} remaining on your customized roadmap.`}
+              </p>
+            </div>
+          </div>
 
           {/* Phase Progression Chips */}
           {preparation.phasesProgress && preparation.phasesProgress.length > 0 && (
@@ -310,868 +361,129 @@ export function ReadinessPage() {
             </div>
           )}
 
-          {/* Next Incomplete Topic Card */}
-          <div className="readiness-next-topic-card">
-            <div>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '3px' }}>
-                NEXT INCOMPLETE TOPIC
-              </span>
-              {preparation.nextIncompleteTopic ? (
-                <>
-                  <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block', marginBottom: '2px' }}>
-                    {preparation.nextIncompleteTopic.title}
-                  </strong>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    {preparation.nextIncompleteTopic.phaseName} · {preparation.nextIncompleteTopic.estimatedHours}
-                  </span>
-                </>
-              ) : (
-                <strong style={{ fontSize: '14px', color: '#16a34a' }}>
-                  🎉 All syllabus topics have been marked complete!
-                </strong>
-              )}
-            </div>
-
-            {preparation.nextIncompleteTopic && (
-              <Link
-                to={
-                  preparation.nextIncompleteTopic.hubTopicId && targetCompanyId
-                    ? `/company-prep?company=${targetCompanyId}&topic=${preparation.nextIncompleteTopic.hubTopicId}`
-                    : `/roadmap`
-                }
-                className="button primary"
-                style={{ fontSize: '11px', padding: '6px 12px', flexShrink: 0 }}
-              >
-                Study in Hub <ArrowRight size={13} />
-              </Link>
-            )}
+          <div style={{ marginTop: 'auto', paddingTop: '14px' }}>
+            <Link
+              to="/roadmap"
+              className="button secondary"
+              style={{ fontSize: '12px', width: '100%', justifyContent: 'center' }}
+            >
+              <Milestone size={14} /> Update Progress on Full Roadmap <ArrowRight size={13} />
+            </Link>
           </div>
         </article>
 
         {/* =========================================================================
-            SECTION B: My Mock-Test Performance & Exam Diagnostics
+            SECTION B: My Mock-Test Performance
             ========================================================================= */}
-        <article className="readiness-section-card" style={{ marginBottom: 0 }}>
+        <article className="readiness-section-card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
           <div className="readiness-card-header">
             <div>
-              <span className="section-eyebrow" style={{ color: '#6366f1' }}>
-                SECTION B · EXAM ACCURACY & DIAGNOSTICS
+              <span className="section-eyebrow" style={{ color: '#2563eb' }}>
+                SECTION B · MOCK-TEST PERFORMANCE
               </span>
               <h2>My Mock-Test Performance</h2>
             </div>
-            <FileCheck2 size={20} color="#6366f1" />
+            <FileCheck2 size={20} color="#2563eb" />
           </div>
 
-          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px', lineHeight: 1.45 }}>
-            Calculated with timed negative marking (+4 correct, -1 incorrect). Abandoned tests are excluded.
+          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.45 }}>
+            Assessment accuracy calculated from your latest eligible attempt for each mock test. Unanswered questions are excluded from accuracy.
           </p>
 
-          {/* Three Distinct Assessment Metrics */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-            gap: '10px',
-            marginBottom: '14px',
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '10px',
-            padding: '12px 14px'
-          }}>
-            <div>
-              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
-                Available Assessments
-              </span>
-              <strong style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                {availableAssessments}
+          {/* Top Summary: Overall Accuracy, Completed, Attempts */}
+          <div className="mock-perf-summary-strip">
+            <div className="mock-perf-summary-item">
+              <span className="mock-perf-summary-label">Overall Accuracy</span>
+              <strong className={`mock-perf-summary-val ${overallAccuracy !== null ? 'highlight-acc' : ''}`}>
+                {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
               </strong>
-              <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block' }}>
-                Target role tests
+              <span className="mock-perf-summary-sub">
+                {overallAccuracy !== null ? 'Across latest attempts' : 'No tests attempted'}
               </span>
             </div>
 
-            <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
-              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
-                Submitted Attempts
+            <div className="mock-perf-summary-item">
+              <span className="mock-perf-summary-label">Assessments Completed</span>
+              <strong className="mock-perf-summary-val">
+                {uniqueAssessmentsCompleted} of {availableAssessments}
+              </strong>
+              <span className="mock-perf-summary-sub">
+                Distinct mock tests
               </span>
-              <strong style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb' }}>
+            </div>
+
+            <div className="mock-perf-summary-item">
+              <span className="mock-perf-summary-label">Total Attempts</span>
+              <strong className="mock-perf-summary-val">
                 {submittedAttempts}
               </strong>
-              <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block' }}>
-                {submittedAttempts > uniqueAssessmentsCompleted ? `Incl. ${submittedAttempts - uniqueAssessmentsCompleted} retake(s)` : 'Submissions'}
-              </span>
-            </div>
-
-            <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
-              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
-                Unique Completed
-              </span>
-              <strong style={{ fontSize: '18px', fontWeight: 800, color: uniqueAssessmentsCompleted > 0 ? '#16a34a' : '#64748b' }}>
-                {uniqueAssessmentsCompleted} / {availableAssessments}
-              </strong>
-              <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block' }}>
-                Distinct test{uniqueAssessmentsCompleted === 1 ? '' : 's'}
+              <span className="mock-perf-summary-sub">
+                {submittedAttempts > uniqueAssessmentsCompleted ? `Includes ${submittedAttempts - uniqueAssessmentsCompleted} retake(s)` : 'Submitted attempts'}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '10px' }}>
-            {mockPerformance.averageScorePercentage !== null ? (
-              <>
-                <strong style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a' }}>
-                  {mockPerformance.averageScorePercentage}%
-                </strong>
-                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
-                  Average score across {submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'} ({uniqueAssessmentsCompleted} of {availableAssessments} unique assessment{availableAssessments === 1 ? '' : 's'} completed)
-                </span>
-              </>
-            ) : (
-              <strong style={{ fontSize: '24px', fontWeight: 700, color: '#94a3b8' }}>
-                No Tests Submitted Yet
-              </strong>
-            )}
-          </div>
-
-          {mockPerformance.averageScorePercentage !== null ? (
-            <ProgressBar
-              value={mockPerformance.averageScorePercentage}
-              tone={mockPerformance.averageScorePercentage >= 70 ? 'green' : (mockPerformance.averageScorePercentage < 50 ? 'orange' : 'blue')}
-              showValue={false}
-              height={9}
-            />
-          ) : (
-            <div style={{ height: '9px', background: '#e2e8f0', borderRadius: '4px' }} />
-          )}
-
-          {/* Exam Diagnostics Metric Cards */}
-          <div className="readiness-diagnostics-grid">
-            <div className="readiness-diagnostic-card">
-              <span>Attempted</span>
-              <strong>{mockPerformance.totalAttemptedQuestions} Qs</strong>
-            </div>
-            <div className="readiness-diagnostic-card">
-              <span>Correct</span>
-              <strong style={{ color: '#16a34a' }}>{mockPerformance.totalCorrect} Qs</strong>
-            </div>
-            <div className="readiness-diagnostic-card">
-              <span>Incorrect</span>
-              <strong style={{ color: mockPerformance.totalIncorrect > 0 ? '#dc2626' : '#64748b' }}>
-                {mockPerformance.totalIncorrect} Qs
-              </strong>
-            </div>
-            <div className="readiness-diagnostic-card">
-              <span>Penalty</span>
-              <strong style={{ color: mockPerformance.negativeMarksLost > 0 ? '#ea580c' : '#64748b' }}>
-                -{mockPerformance.negativeMarksLost} marks
-              </strong>
-            </div>
-          </div>
-
-          {/* Submitted Test History List */}
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
-              RECENT SUBMISSION ATTEMPTS ({mockPerformance.recentTestHistory.length})
-            </span>
-
-            {mockPerformance.recentTestHistory.length > 0 ? (
-              <div className="readiness-history-list">
-                {mockPerformance.recentTestHistory.map((test, idx) => (
-                  <div key={test.attemptId || idx} className="readiness-history-item">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%',
-                        background: '#e0e7ff',
-                        color: '#4338ca',
-                        display: 'grid',
-                        placeItems: 'center',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        flexShrink: 0
-                      }}>
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <strong style={{ fontSize: '13px', color: '#0f172a', display: 'block' }}>
-                          {test.testTitle}
-                        </strong>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>
-                          {new Date(test.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {test.correctCount} correct, {test.incorrectCount} incorrect, {test.unansweredCount} unanswered
-                        </span>
+          {/* Assessment List (Every eligible assessment stacked vertically) */}
+          <div className="mock-perf-assessments-list">
+            {assessmentsList.length > 0 ? (
+              assessmentsList.map((test, idx) => (
+                <div
+                  key={test.testId || idx}
+                  className={`mock-perf-assessment-row ${test.status === 'Completed' ? 'is-completed' : 'is-unattempted'}`}
+                >
+                  <div className="assessment-row-left">
+                    <span className={`assessment-index-pill ${test.status === 'Completed' ? '' : 'unattempted'}`}>
+                      {idx + 1}
+                    </span>
+                    <div className="assessment-row-info">
+                      <h4 className="assessment-row-title">{test.title}</h4>
+                      <div className="assessment-row-meta">
+                        {test.status === 'Completed' ? (
+                          <>
+                            <span><b>{test.correctCount}</b> correct, <b>{test.incorrectCount}</b> incorrect</span>
+                            {test.unansweredCount > 0 && <span>· {test.unansweredCount} unanswered</span>}
+                            {test.submittedAt && (
+                              <span>· {new Date(test.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span>Not Attempted · Ready for practice</span>
+                        )}
                       </div>
                     </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <b style={{ fontSize: '14px', color: test.percentage >= 60 ? '#16a34a' : (test.percentage === 0 ? '#dc2626' : '#d97706'), fontWeight: 800 }}>
-                        {test.percentage}%
-                      </b>
-                      <span style={{ display: 'block', fontSize: '11px', color: '#64748b' }}>
-                        {test.score} / {test.maxScore} marks
-                      </span>
-                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="assessment-row-right">
+                    {test.status === 'Completed' ? (
+                      <div className="assessment-accuracy-block">
+                        <strong className={`assessment-accuracy-val ${test.accuracy >= 70 ? 'strong' : (test.accuracy < 50 ? 'needs-work' : 'moderate')}`}>
+                          {test.accuracy !== null ? `${test.accuracy}%` : 'N/A'}
+                        </strong>
+                        <span className="assessment-status-badge completed">
+                          <CheckCircle2 size={11} /> Completed
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="assessment-accuracy-block">
+                        <span className="assessment-status-badge unattempted">
+                          Not Attempted
+                        </span>
+                        <Link to="/mock-tests" className="assessment-take-btn">
+                          Take Test <ArrowRight size={11} />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
             ) : (
-              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#64748b' }}>
-                  Take an assessment to generate your verified mock-test average.
-                </p>
-                <Link to="/mock-tests" className="button secondary" style={{ fontSize: '11px', margin: '0 auto', display: 'inline-flex' }}>
-                  <FileCheck2 size={12} /> Start Mock Test
-                </Link>
+              <div style={{ textAlign: 'center', padding: '24px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#64748b', fontSize: '13px' }}>
+                No eligible mock assessments currently available for {activeCo.name}.
               </div>
             )}
           </div>
         </article>
       </section>
-
-      {/* =========================================================================
-          SECTION C: Strong Areas and Topics to Focus On
-          ========================================================================= */}
-      <section className="readiness-section-card">
-        <div className="readiness-card-header">
-          <div>
-            <span className="section-eyebrow" style={{ color: '#059669' }}>
-              SECTION C · MOCK TEST INSIGHTS
-            </span>
-            <h2>Strong Areas and Topics to Focus On</h2>
-          </div>
-          {hasSubmittedMockTests && (
-            <span style={{ fontSize: '12px', color: '#64748b' }}>
-              Strictly derived from questions actually answered in submitted tests
-            </span>
-          )}
-        </div>
-
-        {/* CASE 1: Student Is Logged In but Has Not Submitted Any Mock Tests */}
-        {!hasSubmittedMockTests ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '48px 24px',
-            background: '#f8fafc',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-            margin: '8px 0 4px'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '16px',
-              background: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              color: '#059669',
-              display: 'grid',
-              placeItems: 'center',
-              margin: '0 auto 16px',
-              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.08)'
-            }}>
-              <FileCheck2 size={32} />
-            </div>
-            <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
-              Discover Your Strong and Weak Areas
-            </h3>
-            <p style={{ fontSize: '14px', color: '#64748b', maxWidth: '580px', margin: '0 auto 24px', lineHeight: 1.6 }}>
-              Your subject-wise performance will appear here after you complete a mock test. Take an assessment to identify which topics you understand well and which topics need more attention.
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <Link to="/mock-tests" className="button primary">
-                <FileCheck2 size={15} /> Take a Mock Test
-              </Link>
-              <Link
-                to={targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep'}
-                className="button secondary"
-              >
-                <BookOpen size={15} /> Explore Preparation Hub
-              </Link>
-            </div>
-          </div>
-        ) : !hasAttemptedQuestions ? (
-          /* CASE 3: Student Has Submitted Tests but No Questions Attempted / Mapped */
-          <div>
-            {/* Performance Summary */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-              gap: '12px',
-              marginBottom: '20px'
-            }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Available Assessments
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {availableAssessments} test{availableAssessments === 1 ? '' : 's'}
-                </strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Submitted Attempts
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#2563eb' }}>
-                  {submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'}
-                </strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Unique Completed
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {uniqueAssessmentsCompleted} of {availableAssessments}
-                </strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Questions Attempted
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  0 Qs
-                </strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Average Test Score
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {mockPerformance.averageScorePercentage !== null ? `${mockPerformance.averageScorePercentage}%` : '0%'}
-                </strong>
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <Clock size={36} color="#6366f1" style={{ margin: '0 auto 12px' }} />
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
-                Subject-Wise Insights Pending
-              </h3>
-              <p style={{ fontSize: '13.5px', color: '#64748b', maxWidth: '560px', margin: '0 auto 20px', lineHeight: 1.55 }}>
-                You have submitted {submittedAttempts} mock test attempt{submittedAttempts === 1 ? '' : 's'} ({uniqueAssessmentsCompleted} of {availableAssessments} unique assessment{availableAssessments === 1 ? '' : 's'}), but no questions were attempted or mapped to technical subjects. Detailed strong and weak area diagnostics will appear once you answer questions in an assessment.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <Link to="/mock-tests" className="button primary">
-                  <FileCheck2 size={15} /> Take a Mock Test
-                </Link>
-                <Link
-                  to={targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep'}
-                  className="button secondary"
-                >
-                  <BookOpen size={15} /> Explore Preparation Hub
-                </Link>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* CASE 2: Student Has Submitted Mock Tests with Questions Attempted */
-          <div>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.45 }}>
-              Accuracy is only calculated for questions you actually attempted. Unanswered questions are not counted as incorrect subject knowledge.
-            </p>
-
-            {/* 1. Performance Summary Strip */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-              gap: '12px',
-              marginBottom: '20px'
-            }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Available Assessments
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {availableAssessments} test{availableAssessments === 1 ? '' : 's'}
-                </strong>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Submitted Attempts
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#2563eb' }}>
-                  {submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'}
-                </strong>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Unique Completed
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: uniqueAssessmentsCompleted > 0 ? '#16a34a' : '#64748b' }}>
-                  {uniqueAssessmentsCompleted} of {availableAssessments}
-                </strong>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Questions Attempted
-                </span>
-                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {mockPerformance.totalAttemptedQuestions} Qs
-                </strong>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Exam Accuracy
-                </span>
-                <strong style={{
-                  fontSize: '20px',
-                  fontWeight: 800,
-                  color: (mockPerformance.examAccuracyPercentage || 0) >= 60 ? '#16a34a' : '#ea580c'
-                }}>
-                  {mockPerformance.examAccuracyPercentage !== null ? `${mockPerformance.examAccuracyPercentage}%` : 'Pending'}
-                </strong>
-              </div>
-
-              {mockPerformance.negativeMarksLost > 0 && (
-                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '14px 16px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                    Penalty Incurred
-                  </span>
-                  <strong style={{ fontSize: '20px', fontWeight: 800, color: '#c2410c' }}>
-                    -{mockPerformance.negativeMarksLost} marks
-                  </strong>
-                </div>
-              )}
-            </div>
-
-            {/* Interactive Filter Tabs */}
-            <div className="readiness-tab-bar">
-              <button
-                type="button"
-                className={`readiness-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveTab('all')}
-              >
-                <Layers size={13} /> All Subjects Matrix
-              </button>
-              <button
-                type="button"
-                className={`readiness-tab-btn ${activeTab === 'weak' ? 'active' : ''}`}
-                onClick={() => setActiveTab('weak')}
-              >
-                <AlertTriangle size={13} color="#ea580c" /> Topics to Focus On ({weakAreas.length})
-              </button>
-              <button
-                type="button"
-                className={`readiness-tab-btn ${activeTab === 'strong' ? 'active' : ''}`}
-                onClick={() => setActiveTab('strong')}
-              >
-                <CheckCircle2 size={13} color="#16a34a" /> Strong Areas ({strongAreas.length})
-              </button>
-            </div>
-
-            {/* TAB 1: ALL SUBJECTS MATRIX */}
-            {activeTab === 'all' && (
-              <div>
-                <div style={{
-                  display: 'flex',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                  background: '#f8fafc',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  marginBottom: '14px',
-                  fontSize: '11px',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ fontWeight: 700, color: '#334155' }}>Status Criteria:</span>
-                  <span><b>Strong:</b> ≥ 3 attempted, ≥ 70% accuracy</span>
-                  <span>•</span>
-                  <span><b>Needs Focus:</b> ≥ 2 attempted, &lt; 60% accuracy</span>
-                  <span>•</span>
-                  <span><b>Not Enough Data:</b> &lt; 3 questions attempted</span>
-                  <span>•</span>
-                  <span><b>Not Attempted:</b> 0 questions attempted</span>
-                </div>
-
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="readiness-subject-table">
-                    <thead>
-                      <tr>
-                        <th>Subject</th>
-                        <th>Attempted Questions</th>
-                        <th style={{ width: '220px' }}>Exam Accuracy</th>
-                        <th>Status</th>
-                        <th style={{ textAlign: 'right' }}>Preparation Hub</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjectAnalysis.length > 0 ? (
-                        subjectAnalysis.map((item, idx) => (
-                          <tr key={idx}>
-                            <td>
-                              <strong style={{ color: '#0f172a', fontSize: '13px', display: 'block' }}>{item.name}</strong>
-                              {item.testedTopics && item.testedTopics.length > 0 && (
-                                <div style={{ marginTop: '4px' }}>
-                                  {item.testedTopics.map((tt, i) => (
-                                    <span key={i} className="readiness-subtopic-tag">
-                                      {tt.topic} ({tt.correct}/{tt.attempted})
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </td>
-                            <td>
-                              <span style={{ fontSize: '12px', color: item.attempted > 0 ? '#334155' : '#94a3b8' }}>
-                                {item.attempted > 0
-                                  ? `${item.attempted} question${item.attempted === 1 ? '' : 's'} attempted`
-                                  : '0 questions attempted'}
-                              </span>
-                            </td>
-                            <td>
-                              {item.attempted > 0 && item.accuracy !== null ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <ProgressBar
-                                    value={item.accuracy}
-                                    tone={item.accuracy >= 70 ? 'green' : (item.accuracy < 60 ? 'orange' : 'blue')}
-                                    showValue={false}
-                                    height={6}
-                                  />
-                                  <span style={{ fontSize: '12px', fontWeight: 700, minWidth: '35px', textAlign: 'right' }}>
-                                    {item.accuracy}%
-                                  </span>
-                                </div>
-                              ) : (
-                                <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                                  Untested
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              {getStatusBadge(item.status)}
-                            </td>
-                            <td style={{ textAlign: 'right' }}>
-                              <Link
-                                to={
-                                  item.hubTopicId && targetCompanyId
-                                    ? `/company-prep?company=${targetCompanyId}&topic=${item.hubTopicId}`
-                                    : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
-                                }
-                                className="button secondary"
-                                style={{ fontSize: '11px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <span>Study in Hub</span>
-                                <ChevronRight size={12} />
-                              </Link>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-                            No subject records available.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: TOPICS TO FOCUS ON */}
-            {activeTab === 'weak' && (
-              <div>
-                {weakAreas.length > 0 ? (
-                  <div className="readiness-weak-grid">
-                    {weakAreas.map((weak, idx) => (
-                      <div key={idx} className="readiness-insight-box is-weak">
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                            <div>
-                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                {weak.category}: {weak.subject}
-                              </span>
-                              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
-                                {weak.name}
-                              </h3>
-                            </div>
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: '#c2410c',
-                              background: '#ffedd5',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              flexShrink: 0
-                            }}>
-                              {weak.priority || 'Action Needed'}
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '6px 0 8px' }}>
-                            <b style={{ fontSize: '24px', fontWeight: 800, color: '#c2410c' }}>{weak.accuracy}%</b>
-                            <span style={{ fontSize: '12px', color: '#64748b' }}>
-                              Accuracy · {weak.attempted} question{weak.attempted === 1 ? '' : 's'} attempted
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#b45309', background: '#fef3c7', padding: '6px 10px', borderRadius: '6px', margin: '0 0 10px' }}>
-                            <AlertTriangle size={13} style={{ flexShrink: 0 }} />
-                            <span>
-                              Low accuracy across {weak.attempted} attempted question{weak.attempted === 1 ? '' : 's'}{weak.marksLost ? ` (-${weak.marksLost} marks penalty)` : ''}.
-                            </span>
-                          </div>
-
-                          <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px', lineHeight: 1.45 }}>
-                            {weak.description}
-                          </p>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>
-                            Est. Study: <b>{weak.estimatedHours || '2 hrs'}</b>
-                          </span>
-                          <Link
-                            to={
-                              weak.hubTopicId && targetCompanyId
-                                ? `/company-prep?company=${targetCompanyId}&topic=${weak.hubTopicId}`
-                                : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
-                            }
-                            className="button primary"
-                            style={{ fontSize: '11px', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                          >
-                            <span>Study in Preparation Hub</span>
-                            <ArrowRight size={12} />
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <CheckCircle2 size={32} color="#16a34a" style={{ margin: '0 auto 8px' }} />
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
-                      No Critical Weak Areas Detected
-                    </h3>
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-                      You have not recorded significant mistakes or low-accuracy topics in your submitted assessments.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 3: STRONG AREAS */}
-            {activeTab === 'strong' && (
-              <div>
-                {strongAreas.length > 0 ? (
-                  <div className="readiness-strong-grid">
-                    {strongAreas.map((strong, idx) => (
-                      <div key={idx} className="readiness-insight-box is-strong">
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                            <div>
-                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                {strong.category}: {strong.subject}
-                              </span>
-                              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
-                                {strong.name}
-                              </h3>
-                            </div>
-                            <span className="status-pill status-strong" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '2px 8px' }}>
-                              <CheckCircle2 size={12} /> Strong
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '6px 0 8px' }}>
-                            <b style={{ fontSize: '26px', fontWeight: 800, color: '#16a34a' }}>{strong.accuracy}%</b>
-                            <span style={{ fontSize: '12px', color: '#64748b' }}>
-                              Accuracy · {strong.total || strong.attempted} questions attempted ({strong.correct} correct)
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#15803d', margin: '0 0 10px' }}>
-                            <Check size={13} color="#16a34a" />
-                            <span>{strong.note || `${strong.correct} of ${strong.total} questions answered correctly`}</span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                          <Link
-                            to={
-                              strong.hubTopicId && targetCompanyId
-                                ? `/company-prep?company=${targetCompanyId}&topic=${strong.hubTopicId}`
-                                : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
-                            }
-                            className="button secondary"
-                            style={{ fontSize: '11px', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                          >
-                            <span>Study in Preparation Hub</span>
-                            <ChevronRight size={12} />
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <Clock size={32} color="#6366f1" style={{ margin: '0 auto 8px' }} />
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
-                      No High-Confidence Strong Areas Yet
-                    </h3>
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>
-                      Complete more mock assessment questions with &ge; 70% accuracy (minimum 3 attempted questions) to verify your strong areas.
-                    </p>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                      <Link to="/mock-tests" className="button primary" style={{ fontSize: '12px' }}>
-                        <FileCheck2 size={13} /> Take a Mock Test
-                      </Link>
-                      <Link
-                        to={targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep'}
-                        className="button secondary"
-                        style={{ fontSize: '12px' }}
-                      >
-                        <BookOpen size={13} /> Explore Preparation Hub
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* Recruitment Round Readiness for Target Company */}
-      {roundReadiness && roundReadiness.length > 0 && (
-        <section className="readiness-section-card">
-          <div className="readiness-card-header">
-            <div>
-              <span className="section-eyebrow" style={{ color: '#2563eb' }}>
-                OFFICIAL RECRUITMENT STAGES
-              </span>
-              <h2>Recruitment Round Readiness for {targetCompanyName}</h2>
-            </div>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>
-              Mapped to official placement round criteria
-            </span>
-          </div>
-
-          <div className="readiness-rounds-grid">
-            {roundReadiness.map((rnd, idx) => (
-              <div key={idx} className={`readiness-round-box ${rnd.status === 'Completed' ? 'is-done' : (rnd.status === 'In Progress' ? 'is-progress' : '')}`}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                      Round {rnd.roundNumber}
-                    </span>
-                    <span className={`status-pill ${rnd.status === 'Completed' ? 'good' : (rnd.status === 'In Progress' ? 'attention' : 'pending')}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
-                      {rnd.status}
-                    </span>
-                  </div>
-                  <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block', marginBottom: '4px' }}>
-                    {rnd.name}
-                  </strong>
-                  <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '8px' }}>
-                    {rnd.roundType}
-                  </span>
-                  <div style={{ fontSize: '12px', color: '#334155', fontWeight: 600 }}>
-                    {rnd.detail}
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '6px' }}>
-                  {rnd.roundType === 'Online Assessment' ? (
-                    <Link to="/mock-tests" className="button secondary" style={{ fontSize: '11px', width: '100%', justifyContent: 'center' }}>
-                      <FileCheck2 size={12} /> View Round Tests
-                    </Link>
-                  ) : (
-                    <Link to="/company-prep" className="button secondary" style={{ fontSize: '11px', width: '100%', justifyContent: 'center' }}>
-                      <BookOpen size={12} /> Study Round Topics
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* =========================================================================
-          SECTION D: What Should I Do Next? (Max 3 Prioritized Actions)
-          ========================================================================= */}
-      <section className="readiness-section-card">
-        <div className="readiness-card-header">
-          <div>
-            <span className="section-eyebrow" style={{ color: '#ea580c' }}>
-              SECTION D · RECOMMENDED NEXT STEPS
-            </span>
-            <h2>What Should I Do Next?</h2>
-          </div>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>
-            Prioritized by lowest-accuracy tested subjects and next roadmap milestones
-          </span>
-        </div>
-
-        <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.45 }}>
-          Follow these three clear actions to systematically eliminate weak spots and advance your preparation.
-        </p>
-
-        <div className="readiness-actions-grid">
-          {nextActions.map((action, idx) => (
-            <div key={idx} className="readiness-action-box">
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <span className="status-pill" style={{
-                    background: idx === 0 ? '#ffedd5' : (idx === 1 ? '#eff6ff' : '#f1f5f9'),
-                    color: idx === 0 ? '#c2410c' : (idx === 1 ? '#1d4ed8' : '#334155'),
-                    fontSize: '11px',
-                    fontWeight: 700
-                  }}>
-                    {action.badge || `Priority ${idx + 1}`}
-                  </span>
-                  {action.estimatedHours && (
-                    <span style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={11} /> {action.estimatedHours}
-                    </span>
-                  )}
-                </div>
-
-                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
-                  {action.title}
-                </h3>
-
-                <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
-                  {action.description}
-                </p>
-              </div>
-
-              <div>
-                <Link
-                  to={action.actionLink || '/roadmap'}
-                  className={idx === 0 ? 'button primary' : 'button secondary'}
-                  style={{ fontSize: '12px', width: '100%', justifyContent: 'center' }}
-                >
-                  {action.actionText || 'Proceed'} <ArrowRight size={13} />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Transparent Methodology & Integrity Footer */}
-      <footer style={{
-        background: '#f8fafc',
-        border: '1px solid #e2e8f0',
-        borderRadius: '10px',
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '14px',
-        color: '#64748b',
-        fontSize: '12px',
-        lineHeight: 1.5
-      }}>
-        <ShieldCheck size={22} color="#2563eb" style={{ flexShrink: 0 }} />
-        <div>
-          <strong style={{ color: '#0f172a', display: 'block', marginBottom: '2px' }}>
-            Evidence-Based Transparency Guarantee
-          </strong>
-          HireVerse separates topic syllabus coverage and mock assessment accuracy into honest, independent metrics. We never combine them using arbitrary formulas or fabricate selection probabilities.
-        </div>
-      </footer>
     </div>
   )
 }

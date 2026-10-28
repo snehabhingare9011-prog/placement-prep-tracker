@@ -219,7 +219,7 @@ export function CompanyLearningPage() {
             >
               {companies.map(c => (
                 <option key={c._id} value={c._id}>
-                  {c.name} ({c.difficulty} Tier)
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -230,7 +230,7 @@ export function CompanyLearningPage() {
               <CompanyMark company={activeCompany} size={28} />
               <div>
                 <strong>{activeCompany.name}</strong>
-                <span>{activeCompany.industry || 'Technology'} · {activeCompany.difficulty} Difficulty</span>
+                <span>{activeCompany.industry || 'Technology'}</span>
               </div>
             </div>
           )}
@@ -291,51 +291,6 @@ export function CompanyLearningPage() {
         </div>
       </section>
 
-      {/* Next Incomplete Topic Callout */}
-      {nextIncompleteTopic && (
-        <section style={{
-          background: '#ffffff',
-          border: '1px solid #bfdbfe',
-          borderLeft: '4px solid #2563eb',
-          borderRadius: '8px',
-          padding: '16px 20px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          flexWrap: 'wrap',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: '1 1 320px' }}>
-            <div style={{ background: '#eff6ff', color: '#2563eb', padding: '10px', borderRadius: '8px' }}>
-              <Lightbulb size={22} />
-            </div>
-            <div>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px' }}>
-                NEXT INCOMPLETE TOPIC TO STUDY
-              </span>
-              <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block', marginTop: '2px' }}>
-                {nextIncompleteTopic.title}
-              </strong>
-              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                {nextIncompleteTopic.importance} Importance · {nextIncompleteTopic.pillar} · Est. effort: {nextIncompleteTopic.estimatedHours}
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              type="button"
-              className="button"
-              style={{ fontSize: '12px' }}
-              onClick={() => setSelectedResourceTopic(nextIncompleteTopic)}
-            >
-              <BookOpen size={14} /> Open Topic Resources <ArrowRight size={13} />
-            </button>
-          </div>
-        </section>
-      )}
 
       {/* Pillar Tabs Navigation */}
       <div className="pillar-filter-tabs">
@@ -381,61 +336,43 @@ export function CompanyLearningPage() {
               >
                 <div className="topic-card-header">
                   <div
-                    className={`topic-checkbox-indicator ${isCompleted ? 'checked' : ''}`}
+                    className={`topic-icon-slot ${isCompleted ? 'checked' : ''}`}
                     title={isCompleted ? 'Completed on Roadmap' : 'Topic Guide'}
-                    style={{
-                      marginTop: '2px',
-                      flexShrink: 0,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      cursor: 'default'
-                    }}
                   >
                     {isCompleted ? (
-                      <CheckCircle2 size={22} className="check-icon-active" />
+                      <CheckCircle2 size={20} className="check-icon-active" />
                     ) : (
-                      <BookOpen size={20} className="topic-neutral-icon" style={{ color: '#94a3b8' }} />
+                      <BookOpen size={18} className="topic-neutral-icon" />
                     )}
                   </div>
 
                   <div className="topic-title-area">
-                    <div className="topic-tag-row">
-                      <span className={`pillar-tag ${topic.pillar.toLowerCase().replace(/[^a-z]/g, '-')}`}>
-                        {topic.pillar}
-                      </span>
-                      <span className={`importance-tag ${topic.importance.toLowerCase()}`}>
-                        {topic.importance} Importance
-                      </span>
-                      <span className="estimated-time">
-                        <Clock size={12} /> {topic.estimatedHours}
-                      </span>
+                    <div className="topic-meta-row">
+                      <div className="topic-meta-badges">
+                        <span className={`pillar-tag ${topic.pillar.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                          {topic.pillar}
+                        </span>
+                        <span className={`importance-tag ${topic.importance.toLowerCase()}`}>
+                          {topic.importance}
+                        </span>
+                        <span className="estimated-time">
+                          <Clock size={11} /> {topic.estimatedHours}
+                        </span>
+                      </div>
+
+                      {isCompleted && (
+                        <span className="topic-completed-badge">
+                          <Check size={11} strokeWidth={2.8} /> Completed
+                        </span>
+                      )}
                       {isNextUp && !isCompleted && (
-                        <span style={{
-                          background: '#eff6ff',
-                          color: '#2563eb',
-                          border: '1px solid #bfdbfe',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 700
-                        }}>
+                        <span className="topic-next-badge">
                           ★ Next Up
                         </span>
                       )}
-                      {isCompleted && (
-                        <span style={{
-                          background: '#f0fdf4',
-                          color: '#16a34a',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 700
-                        }}>
-                          ✓ Completed
-                        </span>
-                      )}
                     </div>
-                    <h3>
+
+                    <h3 className="topic-title">
                       {topic.title}
                     </h3>
                   </div>
@@ -459,25 +396,25 @@ export function CompanyLearningPage() {
                 {/* Quick Resource Bar & Actions */}
                 <div className="topic-card-footer">
                   <div className="resource-indicators">
-                    <span title={`${topic.popularWebsites?.length || 0} Website Tutorials`}>
-                      <Globe size={14} /> {topic.popularWebsites?.length || 0} Web Guides
+                    <span title={`${topic.popularWebsites?.length || 0} Web Guides`}>
+                      <Globe size={13} />
+                      <span>{topic.popularWebsites?.length || 0} Web Guides</span>
                     </span>
-                    <span title={`${topic.youtubeVideos?.length || 0} Curated YouTube Playlists`}>
-                      <YoutubeIcon size={14} className="yt-icon" /> {topic.youtubeVideos?.length || 0} Videos
+                    <span title={`${topic.youtubeVideos?.length || 0} Video Lessons`}>
+                      <YoutubeIcon size={13} className="yt-icon" />
+                      <span>{topic.youtubeVideos?.length || 0} Videos</span>
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      className="button secondary view-resources-btn"
-                      onClick={() => setSelectedResourceTopic(topic)}
-                    >
-                      <BookOpen size={13} />
-                      <span>Resources</span>
-                      <ChevronRight size={13} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="button secondary view-resources-btn"
+                    onClick={() => setSelectedResourceTopic(topic)}
+                  >
+                    <BookOpen size={13} />
+                    <span>Resources</span>
+                    <ChevronRight size={13} />
+                  </button>
                 </div>
               </article>
             )

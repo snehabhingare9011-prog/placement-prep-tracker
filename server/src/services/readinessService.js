@@ -138,48 +138,37 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
   // SECTION B: My Mock-Test Performance (Real submitted test attempts)
   // Strictly isolated by authenticated student, target company, and target role
   // =========================================================================
-  // 1. Fetch available published assessments matching target company and role
+  // 1. Fetch available published assessments matching target company
   const allTargetTests = await Test.find({ isPublished: true }).lean().catch(() => [])
-  let matchingAvailableTests = allTargetTests.filter(test => {
-    if (!activeCompanyId) return true
-    const testCompId = (test.company?._id || test.company)?.toString()
-    if (testCompId !== activeCompanyId.toString()) return false
-    if (!test.role || !activeRole) return true
-    return test.role.toLowerCase() === activeRole.toLowerCase()
-  })
-
-  // If no tests match exact role for this company, check if the company has any published assessments
-  if (matchingAvailableTests.length === 0 && activeCompanyId) {
+  let matchingAvailableTests = []
+  if (activeCompanyId) {
     matchingAvailableTests = allTargetTests.filter(test => {
       const testCompId = (test.company?._id || test.company)?.toString()
       return testCompId === activeCompanyId.toString()
     })
+    // If no tests match exact company, fallback to published general assessments
+    if (matchingAvailableTests.length === 0) {
+      matchingAvailableTests = allTargetTests.filter(test => !test.company)
+    }
+  } else {
+    matchingAvailableTests = allTargetTests.filter(test => !test.company)
   }
   const availableAssessments = matchingAvailableTests.length
 
-  // 2. Filter user's completed test attempts strictly for active target company and role
+  // 2. Filter user's completed test attempts strictly for active target company
   let relevantTests = []
   if (activeCompanyId) {
     relevantTests = testAttempts.filter(t => {
       const tCompId = (t.company?._id || t.company || t.test?.company?._id || t.test?.company)?.toString()
-      if (tCompId !== activeCompanyId.toString()) return false
-
-      const tRole = t.role || t.test?.role
-      if (tRole && activeRole) {
-        return tRole.toLowerCase() === activeRole.toLowerCase()
-      }
-      return true
+      return tCompId === activeCompanyId.toString()
     })
 
-    // If student has no attempts matching the exact role, check if student has attempts for this company
-    if (relevantTests.length === 0) {
-      relevantTests = testAttempts.filter(t => {
-        const tCompId = (t.company?._id || t.company || t.test?.company?._id || t.test?.company)?.toString()
-        return tCompId === activeCompanyId.toString()
-      })
+    // If student has no attempts for this company and company has no tests, check general attempts
+    if (relevantTests.length === 0 && matchingAvailableTests.every(t => !t.company)) {
+      relevantTests = testAttempts.filter(t => !t.company && !t.test?.company)
     }
   } else {
-    relevantTests = testAttempts
+    relevantTests = testAttempts.filter(t => !t.company && !t.test?.company)
   }
 
   const completedAttempts = relevantTests.filter(t => t.status === 'completed')
@@ -195,6 +184,67 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
   const testScores = completedAttempts.map(t => t.result?.percentage ?? 0)
   const averageTestScore = testScores.length > 0
     ? Math.round(testScores.reduce((a, b) => a + b, 0) / testScores.length)
+    : null
+
+  // Group completed attempts by test to obtain the latest eligible attempt per distinct assessment
+  const latestAttemptByTestId = new Map()
+  completedAttempts.forEach(t => {
+    const testId = (t.test?._id || t.test)?.toString()
+    if (testId && !latestAttemptByTestId.has(testId)) {
+      latestAttemptByTestId.set(testId, t)
+    }
+  })
+  const latestCompletedAttempts = Array.from(latestAttemptByTestId.values())
+
+  // Calculate assessment rows for every eligible assessment
+  const assessmentsList = matchingAvailableTests.map(test => {
+    const testId = test._id.toString()
+    const latest = latestAttemptByTestId.get(testId)
+    if (latest) {
+      const correct = latest.result?.correctCount ?? 0
+      const incorrect = latest.result?.incorrectCount ?? 0
+      const unanswered = latest.result?.unansweredCount ?? 0
+      const attempted = correct + incorrect
+      const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : null
+      return {
+        testId: test._id,
+        title: test.title,
+        status: 'Completed',
+        attempted: true,
+        correctCount: correct,
+        incorrectCount: incorrect,
+        unansweredCount: unanswered,
+        attemptedCount: attempted,
+        accuracy,
+        submittedAt: latest.submittedAt || latest.updatedAt
+      }
+    } else {
+      return {
+        testId: test._id,
+        title: test.title,
+        status: 'Not Attempted',
+        attempted: false,
+        correctCount: 0,
+        incorrectCount: 0,
+        unansweredCount: 0,
+        attemptedCount: 0,
+        accuracy: null,
+        submittedAt: null
+      }
+    }
+  })
+
+  // Calculate Overall Accuracy across the latest eligible attempt for each distinct assessment
+  let latestTotalCorrect = 0
+  let latestTotalAttempted = 0
+  latestCompletedAttempts.forEach(t => {
+    const correct = t.result?.correctCount ?? 0
+    const incorrect = t.result?.incorrectCount ?? 0
+    latestTotalCorrect += correct
+    latestTotalAttempted += (correct + incorrect)
+  })
+  const overallAccuracy = latestTotalAttempted > 0
+    ? Math.round((latestTotalCorrect / latestTotalAttempted) * 100)
     : null
 
   const recentTestHistory = completedAttempts.slice(0, 5).map(t => {
@@ -293,6 +343,10 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
         uniqueAssessmentsCompleted,
         testsCompleted: submittedAttempts,
         averageScorePercentage: null,
+        overallAccuracy: null,
+        assessmentsList: assessmentsList || [],
+        strongAreasList: [],
+        weakAreasList: [],
         totalAttemptedQuestions: 0,
         totalCorrect: 0,
         totalIncorrect: 0,
@@ -309,6 +363,7 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
         uniqueAssessmentsCompleted,
         testsCompleted: submittedAttempts,
         averageTestScore: null,
+        overallAccuracy: null,
         preparationProgress,
         roadmapCompletion: preparationProgress,
         curriculumTopicsCompleted: prepCompleted,
@@ -344,8 +399,8 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
 
   const topicStatsMap = new Map()
 
-  // Aggregate questions from actual completed mock tests
-  completedAttempts.forEach(attempt => {
+  // Aggregate questions from actual completed mock tests (using latest eligible attempt per assessment)
+  latestCompletedAttempts.forEach(attempt => {
     const testQuestions = attempt.test?.questions || []
     const qMap = new Map()
     testQuestions.forEach(q => {
@@ -579,6 +634,35 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       }
     })
 
+  // Assessment-level Strong Areas & Areas to Improve for simplified Section B
+  const strongAreasList = Array.from(topicStatsMap.values())
+    .filter(t => t.attempted >= 1 && (t.correct / t.attempted) >= 0.6)
+    .map(t => ({
+      topic: t.topic,
+      subject: t.subject,
+      accuracy: Math.round((t.correct / t.attempted) * 100),
+      correct: t.correct,
+      attempted: t.attempted
+    }))
+    .sort((a, b) => b.accuracy - a.accuracy || b.attempted - a.attempted)
+
+  const weakAreasList = Array.from(topicStatsMap.values())
+    .filter(t => t.attempted >= 1 && ((t.correct / t.attempted) < 0.6 || t.incorrect > 0))
+    .map(t => {
+      const accuracy = Math.round((t.correct / t.attempted) * 100)
+      const mappedHub = mapQuestionAreaToHubTopic(t.topic, t.subject)
+      return {
+        topic: t.topic,
+        subject: t.subject,
+        accuracy,
+        incorrect: t.incorrect,
+        attempted: t.attempted,
+        hubTopicId: mappedHub ? mappedHub.id : null,
+        hubTopicTitle: mappedHub ? mappedHub.title : t.topic
+      }
+    })
+    .sort((a, b) => a.accuracy - b.accuracy || b.incorrect - a.incorrect)
+
   // Skills breakdown for test suite backward compatibility
   const skillsBreakdown = subjectAnalysis.map(s => ({
     name: s.name,
@@ -732,12 +816,16 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       uniqueAssessmentsCompleted,
       testsCompleted: submittedAttempts,
       averageScorePercentage: averageTestScore,
+      overallAccuracy,
+      assessmentsList,
+      strongAreasList,
+      weakAreasList,
       totalAttemptedQuestions,
       totalCorrect,
       totalIncorrect,
       totalUnanswered,
       negativeMarksLost: totalNegativeMarksLost,
-      examAccuracyPercentage,
+      examAccuracyPercentage: overallAccuracy ?? examAccuracyPercentage,
       recentTestHistory
     },
     subjectAnalysis,
@@ -748,6 +836,7 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       uniqueAssessmentsCompleted,
       testsCompleted: submittedAttempts,
       averageTestScore,
+      overallAccuracy,
       preparationProgress,
       roadmapCompletion: preparationProgress,
       curriculumTopicsCompleted: prepCompleted,

@@ -78,7 +78,7 @@ export function TargetModal({ close }) {
               >
                 {companies.map(c => (
                   <option key={c._id} value={c._id}>
-                    {c.name} ({c.difficulty})
+                    {c.name}
                   </option>
                 ))}
               </select>

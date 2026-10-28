@@ -3,6 +3,7 @@ import { connectDB } from './config/db.js'
 import { ENV } from './config/env.js'
 import { User } from './models/User.js'
 import { seedDatabase } from '../scripts/seed.js'
+import { syncAssessmentsToDatabase } from './services/assessmentSyncService.js'
 
 async function bootstrap() {
   try {
@@ -13,6 +14,9 @@ async function bootstrap() {
     if (userCount === 0) {
       console.log('[Startup] No accounts found in database. Automatically initializing demo data and accounts...')
       await seedDatabase()
+    } else {
+      // Ensure all available companies have their mock assessments in database without modifying user accounts
+      await syncAssessmentsToDatabase()
     }
 
     const server = app.listen(ENV.PORT, () => {

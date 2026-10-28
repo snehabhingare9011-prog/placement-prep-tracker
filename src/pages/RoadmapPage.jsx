@@ -399,20 +399,13 @@ export function RoadmapPage() {
 
   // Find next incomplete topic in the active stage
   let nextIncompleteTask = null
-  let nextIncompleteStageName = ''
-  let nextIncompleteStageIndex = -1
   if (activePhaseIndex !== -1) {
     const activePhase = roadmap.phases[activePhaseIndex]
     const foundTask = (activePhase.tasks || []).find(t => !t.completed)
     if (foundTask) {
       nextIncompleteTask = foundTask
-      nextIncompleteStageName = activePhase.title
-      nextIncompleteStageIndex = activePhaseIndex
     }
   }
-
-  const nextIncompleteResource = nextIncompleteTask ? findTopicResource(nextIncompleteTask) : null
-  const nextIncompleteHasResource = !!nextIncompleteResource
 
   return (
     <div className="roadmap-page">
@@ -467,67 +460,8 @@ export function RoadmapPage() {
         </div>
       </section>
 
-      {/* 3. Highlighted "Continue Preparation" Card displaying next incomplete topic */}
-      {nextIncompleteTask ? (
-        <section className="continue-prep-card">
-          <div className="continue-prep-content">
-            <div className="continue-prep-icon">
-              <Milestone size={24} />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
-                  ACTIVE STAGE MILESTONE · NEXT TO STUDY
-                </span>
-                {nextIncompleteStageName && (
-                  <span style={{
-                    fontSize: '10px',
-                    background: '#eff6ff',
-                    color: '#1d4ed8',
-                    border: '1px solid #bfdbfe',
-                    borderRadius: '4px',
-                    padding: '1px 6px',
-                    fontWeight: 600
-                  }}>
-                    Stage {nextIncompleteStageIndex + 1}: {nextIncompleteStageName}
-                  </span>
-                )}
-              </div>
-              <strong style={{ fontSize: '16px', color: '#0f172a', display: 'block', marginTop: '3px' }}>
-                {nextIncompleteTask.title}
-              </strong>
-              <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
-                {nextIncompleteTask.detail || `${nextIncompleteTask.subject} required milestone`}.
-                {' '}Estimated study time: <b>{nextIncompleteTask.estimatedMinutes || 45} mins</b> · Priority: <b>{nextIncompleteTask.priority || 'Medium'}</b>
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', flexShrink: 0, flexWrap: 'wrap' }}>
-            {nextIncompleteHasResource ? (
-              <button
-                type="button"
-                className="button primary"
-                onClick={() => handleOpenStudyResource(nextIncompleteTask, false, nextIncompleteStageIndex)}
-              >
-                <BookOpen size={14} /> Study Now
-              </button>
-            ) : (
-              <span className="resource-unavailable-label" style={{ alignSelf: 'center' }}>
-                Resource not available yet
-              </span>
-            )}
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => handleToggleTask(nextIncompleteTask.taskId, false, nextIncompleteStageIndex)}
-              disabled={updatingTaskId === nextIncompleteTask.taskId}
-            >
-              <Check size={14} /> Mark Finished
-            </button>
-          </div>
-        </section>
-      ) : (
+      {/* All Preparation Stages Completed Celebration Banner */}
+      {completedUniqueTopics > 0 && completedUniqueTopics === totalUniqueTopics && (
         <section style={{
           background: '#f0fdf4',
           border: '1px solid #bbf7d0',

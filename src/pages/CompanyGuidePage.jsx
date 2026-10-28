@@ -103,7 +103,7 @@ export function CompanyGuidePage() {
             tone="blue"
             showValue={false}
           />
-          <small>{userProgress?.statusLabel || 'Complete practice to calculate readiness'}</small>
+          <small>{userProgress?.statusLabel || 'Complete curriculum topics to calculate readiness'}</small>
 
           {!isCurrentTarget ? (
             <button
@@ -236,8 +236,8 @@ export function CompanyGuidePage() {
                   <p>{q.statement.slice(0, 120)}...</p>
                   <div className="tagged-q-footer">
                     <small>Est. {q.estimatedTimeMinutes} min</small>
-                    <Link to={`/practice`} className="button secondary" style={{ padding: '6px 12px', fontSize: '11px' }}>
-                      Practice Question <ArrowRight size={13} />
+                    <Link to={`/company-prep?company=${company._id}`} className="button secondary" style={{ padding: '6px 12px', fontSize: '11px' }}>
+                      Study Topic <ArrowRight size={13} />
                     </Link>
                   </div>
                 </div>

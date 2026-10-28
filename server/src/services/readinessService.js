@@ -2,8 +2,14 @@ import { PracticeAttempt } from '../models/PracticeAttempt.js'
 import { TestAttempt } from '../models/TestAttempt.js'
 import { Roadmap } from '../models/Roadmap.js'
 import { Company } from '../models/Company.js'
+import { User } from '../models/User.js'
+import { getCurriculumForCompany } from './curriculumService.js'
 
 export async function calculateReadiness(userId, companyId = null, roleTitle = null) {
+  const user = await User.findById(userId).lean()
+  const activeCompanyId = companyId || user?.targetCompany
+  const activeRole = roleTitle || user?.currentTargetRole || 'Software Engineer'
+
   // Fetch student practice attempts
   const practiceAttempts = await PracticeAttempt.find({ user: userId }).populate('question').lean()
 
@@ -13,35 +19,88 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
     .sort({ createdAt: -1 })
     .lean()
 
-  // Fetch active roadmap
+  // Fetch active roadmap for target company
   const roadmapQuery = { user: userId }
-  if (companyId) roadmapQuery.company = companyId
+  if (activeCompanyId) roadmapQuery.company = activeCompanyId
   const roadmap = await Roadmap.findOne(roadmapQuery).sort({ updatedAt: -1 }).lean()
 
   // Fetch company details if specified
   let targetCompany = null
-  if (companyId) {
-    targetCompany = await Company.findById(companyId).lean()
+  if (activeCompanyId) {
+    targetCompany = await Company.findById(activeCompanyId).lean()
+  }
+
+  // Determine completed curriculum topics for this specific target
+  let completedTopics = user?.completedTopics || []
+  if (activeCompanyId && user?.targetProgress?.length > 0) {
+    const entry = user.targetProgress.find(
+      tp => tp.company?.toString() === activeCompanyId.toString() && (tp.role === activeRole || !tp.role)
+    )
+    if (entry) {
+      completedTopics = entry.completedTopics || []
+    }
+  }
+
+  let totalCurriculumTopics = 0
+  let completedCurriculumCount = 0
+  let topicCompletion = 0
+
+  if (targetCompany) {
+    const curriculum = getCurriculumForCompany(targetCompany, [activeRole])
+    if (curriculum && curriculum.totalTopics > 0) {
+      totalCurriculumTopics = curriculum.totalTopics
+      completedCurriculumCount = curriculum.topics.filter(t => completedTopics.includes(t.id)).length
+      topicCompletion = Math.round((completedCurriculumCount / totalCurriculumTopics) * 100)
+    }
+  }
+
+  // Roadmap Progress (tasks completion)
+  let roadmapCompletion = 0
+  if (roadmap && roadmap.phases?.length > 0) {
+    const allTasks = roadmap.phases.flatMap(p => p.tasks || [])
+    const doneTasks = allTasks.filter(t => t.completed)
+    roadmapCompletion = allTasks.length > 0 ? Math.round((doneTasks.length / allTasks.length) * 100) : 0
+  }
+
+  // Combined Roadmap and Topic Checkmarks (20% weight)
+  let roadmapAndTopicProgress = roadmapCompletion
+  if (totalCurriculumTopics > 0 && roadmap) {
+    roadmapAndTopicProgress = Math.round((roadmapCompletion * 0.5) + (topicCompletion * 0.5))
+  } else if (totalCurriculumTopics > 0) {
+    roadmapAndTopicProgress = topicCompletion
+  }
+
+  // Relevant Mock Tests for this target
+  let relevantTests = testAttempts
+  if (activeCompanyId) {
+    const companySpecificTests = testAttempts.filter(
+      t => t.test?.company?.toString() === activeCompanyId.toString() || t.company?.toString() === activeCompanyId.toString()
+    )
+    if (companySpecificTests.length > 0) {
+      relevantTests = companySpecificTests
+    }
   }
 
   const totalPractice = practiceAttempts.length
-  const totalTests = testAttempts.length
+  const totalTests = relevantTests.length
 
-  // Check data sufficiency threshold
-  const hasEnoughData = totalPractice >= 2 || totalTests >= 1
+  // Check data sufficiency threshold based on genuine learning and assessment activity
+  const hasEnoughData = totalTests >= 1 || completedCurriculumCount >= 2 || roadmapCompletion >= 10 || totalPractice >= 2
 
   if (!hasEnoughData) {
     return {
       hasEnoughData: false,
       overallScore: null,
       statusLabel: 'Not enough activity yet',
-      message: 'Complete at least 2 practice questions or 1 mock test to unlock your transparent readiness score.',
+      message: 'Complete some learning topics and take a mock test to start tracking your preparation.',
+      targetCompany: targetCompany ? targetCompany.name : 'Target Companies',
+      targetRole: activeRole,
       metrics: {
-        practiceCount: totalPractice,
         testsCompleted: totalTests,
-        practiceAccuracy: 0,
         averageTestScore: 0,
-        roadmapCompletion: 0,
+        roadmapCompletion: roadmapCompletion,
+        curriculumTopicsCompleted: completedCurriculumCount,
+        totalCurriculumTopics,
         streakDays: 0
       },
       skillsBreakdown: [
@@ -53,57 +112,70 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       ],
       strengths: [],
       weakAreas: [
-        { name: 'Foundational Practice', score: 0, note: 'Start with high-frequency DSA or Aptitude questions' }
+        { name: 'Core Syllabus Topics', score: 0, note: 'Study fundamental curriculum topics in Preparation Hub' }
       ],
       recommendedActions: [
-        'Attempt your first set of practice questions from the Question Bank.',
-        'Take a 15-minute diagnostic mock test to benchmark your baseline readiness.',
-        'Generate a tailored preparation roadmap for your target company.'
+        'Explore your structured learning topics in the Preparation Hub.',
+        'Take a timed mock assessment to benchmark your placement readiness.',
+        'Follow your tailored preparation roadmap for your target company.'
       ],
-      formulaExplanation: 'Readiness = 35% Practice Accuracy + 30% Mock Test Average + 20% Roadmap Progress + 15% Subject Coverage.'
+      formulaExplanation: 'Preparation Score = (40% Curriculum Topics) + (40% Mock Test Average) + (20% Roadmap Milestones)'
     }
   }
 
-  // 1. Practice Accuracy (35% weight)
-  const solvedCount = practiceAttempts.filter(p => p.isCorrect || p.status === 'solved').length
-  const practiceAccuracy = totalPractice > 0 ? Math.round((solvedCount / totalPractice) * 100) : 0
+  // 1. Curriculum Topics Progress (40% weight)
+  // computed in topicCompletion (0 - 100)
 
-  // 2. Mock Test Average (30% weight)
-  const testScores = testAttempts.map(t => t.result?.percentage || 0)
+  // 2. Mock Test Average (40% weight if tests exist, else topics & roadmap carry the weight)
+  const testScores = relevantTests.map(t => t.result?.percentage || 0)
   const averageTestScore = testScores.length > 0
     ? Math.round(testScores.reduce((a, b) => a + b, 0) / testScores.length)
-    : practiceAccuracy // fallback to practice accuracy if no tests yet
+    : 0
 
-  // 3. Roadmap Progress (20% weight)
-  let roadmapCompletion = 0
-  if (roadmap && roadmap.phases?.length > 0) {
-    const allTasks = roadmap.phases.flatMap(p => p.tasks || [])
-    const doneTasks = allTasks.filter(t => t.completed)
-    roadmapCompletion = allTasks.length > 0 ? Math.round((doneTasks.length / allTasks.length) * 100) : 0
+  // 3. Roadmap Milestone Completion (20% weight)
+  // computed in roadmapCompletion (0 - 100)
+
+  // Weighted score calculation based on genuine learning & assessment data:
+  let weightedReadiness = 0
+  let formulaExplanation = ''
+
+  if (testScores.length > 0) {
+    weightedReadiness = Math.round(
+      (topicCompletion * 0.40) +
+      (averageTestScore * 0.40) +
+      (roadmapCompletion * 0.20)
+    )
+    formulaExplanation = 'Preparation Score = (40% Curriculum Topics) + (40% Mock Test Average) + (20% Roadmap Milestones)'
+  } else {
+    // When no mock tests submitted yet, weight topic completion and roadmap milestones
+    weightedReadiness = Math.round(
+      (topicCompletion * 0.60) +
+      (roadmapCompletion * 0.40)
+    )
+    formulaExplanation = 'Preparation Score = (60% Curriculum Topics) + (40% Roadmap Milestones) · Mock Test Benchmark Pending'
   }
 
-  // 4. Subject Coverage (15% weight)
-  // Expected core subjects: DSA, DBMS, OS, Aptitude, System Design
+  // If student has legacy practice attempts (for test suite compatibility), factor into subject coverage
   const subjectsCovered = new Set()
   practiceAttempts.forEach(p => {
     if (p.question?.subject) subjectsCovered.add(p.question.subject)
   })
-  testAttempts.forEach(t => {
+  relevantTests.forEach(t => {
     t.result?.subjectBreakdown?.forEach(sb => {
       if (sb.totalQuestions > 0) subjectsCovered.add(sb.subject)
     })
   })
+  if (completedCurriculumCount > 0 && targetCompany) {
+    const curriculum = getCurriculumForCompany(targetCompany, [activeRole])
+    curriculum?.topics?.forEach(t => {
+      if (completedTopics.includes(t.id) && t.pillar) {
+        subjectsCovered.add(t.pillar)
+      }
+    })
+  }
+
   const expectedSubjects = targetCompany?.frequentlyTestedSubjects || ['DSA', 'DBMS', 'OS', 'Aptitude', 'OOP']
   const coveredCount = expectedSubjects.filter(s => subjectsCovered.has(s)).length
-  const subjectCoveragePercentage = Math.round((coveredCount / Math.max(1, expectedSubjects.length)) * 100)
-
-  // Weighted formula:
-  const weightedReadiness = Math.round(
-    (practiceAccuracy * 0.35) +
-    (averageTestScore * 0.30) +
-    (roadmapCompletion * 0.20) +
-    (subjectCoveragePercentage * 0.15)
-  )
 
   const overallScore = Math.min(100, Math.max(0, weightedReadiness))
 
@@ -154,7 +226,7 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
 
   const recommendedActions = []
   if (weakAreas.length > 0) {
-    recommendedActions.push(`Practice 5 questions in ${weakAreas[0].name} to address your current bottleneck.`)
+    recommendedActions.push(`Study recommended topics in ${weakAreas[0].name} in the Preparation Hub to address this bottleneck.`)
   }
   if (roadmapCompletion < 50) {
     recommendedActions.push('Complete the next milestone on your preparation roadmap.')
@@ -175,12 +247,13 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
     overallScore,
     statusLabel,
     targetCompany: targetCompany ? targetCompany.name : 'Target Companies',
+    targetRole: activeRole,
     metrics: {
-      practiceCount: totalPractice,
       testsCompleted: totalTests,
-      practiceAccuracy,
       averageTestScore,
-      roadmapCompletion,
+      roadmapCompletion: roadmapCompletion,
+      curriculumTopicsCompleted: completedCurriculumCount,
+      totalCurriculumTopics,
       subjectsCoveredCount: coveredCount,
       totalExpectedSubjects: expectedSubjects.length
     },
@@ -188,6 +261,6 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
     strengths,
     weakAreas,
     recommendedActions,
-    formulaExplanation: 'Score = (35% Practice Accuracy) + (30% Mock Test Average) + (20% Roadmap Progress) + (15% Subject Coverage)'
+    formulaExplanation: formulaExplanation || 'Preparation Score = (40% Curriculum Topics) + (40% Mock Test Average) + (20% Roadmap Milestones)'
   }
 }

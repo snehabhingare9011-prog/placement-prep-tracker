@@ -11,12 +11,13 @@ export function Topbar({ onOpenTarget, onOpenProfile, onToggleMobile }) {
   const [announcements, setAnnouncements] = useState([])
   const [readAnnouncements, setReadAnnouncements] = useState(false)
 
-  const currentCompany = user?.targetCompany || {
-    name: 'Accenture',
-    mark: '>',
-    color: '#a100ff'
-  }
-  const currentRole = user?.currentTargetRole || 'Full Stack Developer'
+  const currentCompany = (user?.targetCompany && typeof user.targetCompany === 'object' && user.targetCompany.name)
+    ? user.targetCompany
+    : (user?.targetCompany && typeof user.targetCompany === 'string'
+        ? { name: 'Target Company', mark: 'T', color: '#2563eb' }
+        : { name: 'Accenture', mark: '>', color: '#a100ff' }
+      )
+  const currentRole = user?.currentTargetRole || 'Software Engineer'
 
   useEffect(() => {
     async function loadAnnouncements() {

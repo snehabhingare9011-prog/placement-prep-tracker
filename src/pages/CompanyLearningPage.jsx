@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import {
   Building2,
   CheckCircle2,
@@ -13,9 +13,11 @@ import {
   Sparkles,
   Layers,
   ChevronRight,
-  Filter,
   Check,
-  Award
+  Award,
+  Lightbulb,
+  FileCheck2,
+  Milestone
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
@@ -36,7 +38,6 @@ const PILLARS = [
 export function CompanyLearningPage() {
   const { user, showToast } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
 
   const [companies, setCompanies] = useState([])
   const [selectedCompanyId, setSelectedCompanyId] = useState('')
@@ -48,6 +49,9 @@ export function CompanyLearningPage() {
   const [loading, setLoading] = useState(true)
   const [updatingTopicId, setUpdatingTopicId] = useState(null)
 
+  const activeUserTargetId = user?.targetCompany?._id || user?.targetCompany
+  const activeUserRole = user?.currentTargetRole || 'Software Engineer'
+
   // 1. Fetch available companies on mount
   useEffect(() => {
     async function loadCompanies() {
@@ -55,10 +59,8 @@ export function CompanyLearningPage() {
         const res = await api.companies.getAll()
         if (res.success && res.companies && res.companies.length > 0) {
           setCompanies(res.companies)
-          // Default to company from URL, or user target, or first company
           const urlCompanyId = searchParams.get('company')
-          const userTargetId = user?.targetCompany?._id || user?.targetCompany
-          const initialId = urlCompanyId || userTargetId || res.companies[0]._id
+          const initialId = urlCompanyId || activeUserTargetId || res.companies[0]._id
           setSelectedCompanyId(initialId)
         }
       } catch (err) {
@@ -68,11 +70,25 @@ export function CompanyLearningPage() {
     loadCompanies()
   }, [])
 
-  // 2. Load user completed topics progress
+  // Sync selected company & role when user target changes
   useEffect(() => {
+    const urlCompanyId = searchParams.get('company')
+    if (!urlCompanyId && activeUserTargetId && activeUserTargetId !== selectedCompanyId) {
+      setSelectedCompanyId(activeUserTargetId)
+      if (user?.currentTargetRole) {
+        setSelectedRoles([user.currentTargetRole])
+      }
+    }
+  }, [activeUserTargetId, user?.currentTargetRole])
+
+  // 2. Load user completed topics progress scoped to active company
+  useEffect(() => {
+    if (!selectedCompanyId) return
+
     async function loadUserProgress() {
       try {
-        const res = await api.curriculum.getUserProgress()
+        const role = selectedRoles[0] || activeUserRole
+        const res = await api.curriculum.getUserProgress({ companyId: selectedCompanyId, role })
         if (res.success) {
           setCompletedTopicIds(res.completedTopics || [])
           if (res.selectedRoles && res.selectedRoles.length > 0 && selectedRoles.length === 0) {
@@ -84,7 +100,7 @@ export function CompanyLearningPage() {
       }
     }
     loadUserProgress()
-  }, [])
+  }, [selectedCompanyId, selectedRoles[0], activeUserRole])
 
   // 3. Load curriculum whenever selected company or roles change
   useEffect(() => {
@@ -96,9 +112,11 @@ export function CompanyLearningPage() {
         const res = await api.curriculum.getByCompany(selectedCompanyId, selectedRoles)
         if (res.success) {
           setCurriculumData(res)
-          // If no roles were initially selected, initialize with all company roles
-          if (selectedRoles.length === 0 && res.company?.roles) {
-            setSelectedRoles(res.company.roles)
+          if (selectedRoles.length === 0) {
+            const defaultRole = activeUserRole && res.company?.roles?.includes(activeUserRole)
+              ? [activeUserRole]
+              : (res.company?.roles?.slice(0, 1) || ['Software Engineer'])
+            setSelectedRoles(defaultRole)
           }
         }
       } catch (err) {
@@ -116,7 +134,6 @@ export function CompanyLearningPage() {
     const compId = e.target.value
     setSelectedCompanyId(compId)
     setSearchParams({ company: compId })
-    // Reset selected roles to trigger fresh defaults
     setSelectedRoles([])
   }
 
@@ -133,19 +150,19 @@ export function CompanyLearningPage() {
       updated = [...selectedRoles, role]
     }
     setSelectedRoles(updated)
-    // Persist to backend
     api.curriculum.updateRoles(updated).catch(() => {})
   }
 
-  // Toggle topic completion
+  // Toggle topic completion scoped to company
   const handleToggleTopic = async (topicId) => {
     setUpdatingTopicId(topicId)
     try {
-      const res = await api.curriculum.toggleTopic(topicId)
+      const role = selectedRoles[0] || activeUserRole
+      const res = await api.curriculum.toggleTopic(topicId, selectedCompanyId, role)
       if (res.success) {
         setCompletedTopicIds(res.completedTopics || [])
         showToast(
-          res.isCompleted ? 'Topic marked as completed! 🎉' : 'Topic marked for review',
+          res.isCompleted ? 'Topic marked as completed! 🎉' : 'Topic marked as incomplete',
           'success'
         )
       }
@@ -175,13 +192,25 @@ export function CompanyLearningPage() {
 
   const activeCompany = companies.find(c => c._id === selectedCompanyId) || curriculumData?.company
 
+  // Prioritized Next Incomplete Topic
+  const nextIncompleteTopic = allTopics.find(
+    t => t.roles.some(r => selectedRoles.includes(r)) && !completedTopicIds.includes(t.id)
+  )
+
   return (
     <div className="company-learning-page">
       <PageHeader
         eyebrow="TARGET COMPANY PREPARATION HUB"
-        title="What to Prepare & Free Resources"
-        description="Select your target company and job roles to see exact syllabus requirements, verified website tutorials (W3Schools, GFG), and top YouTube playlists."
-      />
+        title="Structured Placement Learning Resources"
+        description="Master required syllabus topics organized by target company and job role. Follow curated documentation guides, video playlists, and track topic completion."
+      >
+        <Link to="/roadmap" className="button secondary">
+          <Milestone size={15} /> View Roadmap
+        </Link>
+        <Link to="/mock-tests" className="button">
+          <FileCheck2 size={15} /> Mock Assessments
+        </Link>
+      </PageHeader>
 
       {/* Company & Multi-Role Selector Control Panel */}
       <section className="learning-control-panel">
@@ -250,7 +279,7 @@ export function CompanyLearningPage() {
             <div className="progress-stat-pill">
               <Award size={18} className="award-icon" />
               <div>
-                <p>Preparation Progress for {activeCompany?.name || 'Selected Company'}</p>
+                <p>Curriculum Completion for {activeCompany?.name || 'Selected Company'}</p>
                 <h3>
                   {progressPercent}% Complete
                   <small>({completedCount} of {totalRelevantTopics} topics mastered)</small>
@@ -258,7 +287,7 @@ export function CompanyLearningPage() {
               </div>
             </div>
             <div className="progress-meta-text">
-              <span>{totalRelevantTopics - completedCount} topics remaining to reach 100% readiness</span>
+              <span>{totalRelevantTopics - completedCount} topics remaining to complete target syllabus</span>
             </div>
           </div>
 
@@ -270,6 +299,52 @@ export function CompanyLearningPage() {
           </div>
         </div>
       </section>
+
+      {/* Next Incomplete Topic Callout */}
+      {nextIncompleteTopic && (
+        <section style={{
+          background: '#ffffff',
+          border: '1px solid #bfdbfe',
+          borderLeft: '4px solid #2563eb',
+          borderRadius: '8px',
+          padding: '16px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: '1 1 320px' }}>
+            <div style={{ background: '#eff6ff', color: '#2563eb', padding: '10px', borderRadius: '8px' }}>
+              <Lightbulb size={22} />
+            </div>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px' }}>
+                NEXT INCOMPLETE TOPIC TO STUDY
+              </span>
+              <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block', marginTop: '2px' }}>
+                {nextIncompleteTopic.title}
+              </strong>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
+                {nextIncompleteTopic.importance} Importance · {nextIncompleteTopic.pillar} · Est. effort: {nextIncompleteTopic.estimatedHours}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              className="button"
+              style={{ fontSize: '12px' }}
+              onClick={() => setSelectedResourceTopic(nextIncompleteTopic)}
+            >
+              <BookOpen size={14} /> Open Topic Resources <ArrowRight size={13} />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Pillar Tabs Navigation */}
       <div className="pillar-filter-tabs">
@@ -306,11 +381,13 @@ export function CompanyLearningPage() {
           {filteredTopics.map(topic => {
             const isCompleted = completedTopicIds.includes(topic.id)
             const isToggling = updatingTopicId === topic.id
+            const isNextUp = nextIncompleteTopic?.id === topic.id
 
             return (
               <article
                 key={topic.id}
                 className={`topic-learning-card ${isCompleted ? 'completed' : ''}`}
+                style={isNextUp && !isCompleted ? { borderColor: '#93c5fd', boxShadow: '0 0 0 1px #bfdbfe' } : {}}
               >
                 <div className="topic-card-header">
                   <button
@@ -318,7 +395,7 @@ export function CompanyLearningPage() {
                     className={`topic-checkbox-btn ${isCompleted ? 'checked' : ''}`}
                     onClick={() => handleToggleTopic(topic.id)}
                     disabled={isToggling}
-                    title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+                    title={isCompleted ? 'Click to uncheck (mark as incomplete)' : 'Click to mark as completed'}
                   >
                     {isCompleted ? (
                       <CheckCircle2 size={22} className="check-icon-active" />
@@ -338,6 +415,31 @@ export function CompanyLearningPage() {
                       <span className="estimated-time">
                         <Clock size={12} /> {topic.estimatedHours}
                       </span>
+                      {isNextUp && !isCompleted && (
+                        <span style={{
+                          background: '#eff6ff',
+                          color: '#2563eb',
+                          border: '1px solid #bfdbfe',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 700
+                        }}>
+                          ★ Next Up
+                        </span>
+                      )}
+                      {isCompleted && (
+                        <span style={{
+                          background: '#f0fdf4',
+                          color: '#16a34a',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 700
+                        }}>
+                          ✓ Completed
+                        </span>
+                      )}
                     </div>
                     <h3 className={isCompleted ? 'line-through-title' : ''}>
                       {topic.title}
@@ -349,7 +451,7 @@ export function CompanyLearningPage() {
 
                 {/* Applicable Roles */}
                 <div className="topic-roles-preview">
-                  <small>Required for:</small>
+                  <small>Relevant for:</small>
                   {topic.roles.map(r => (
                     <span
                       key={r}
@@ -360,26 +462,38 @@ export function CompanyLearningPage() {
                   ))}
                 </div>
 
-                {/* Quick Resource Bar & Study Action */}
+                {/* Quick Resource Bar & Actions */}
                 <div className="topic-card-footer">
                   <div className="resource-indicators">
-                    <span title={`${topic.popularWebsites.length} Website Tutorials`}>
-                      <Globe size={14} /> {topic.popularWebsites.length} Web Tutorials
+                    <span title={`${topic.popularWebsites?.length || 0} Website Tutorials`}>
+                      <Globe size={14} /> {topic.popularWebsites?.length || 0} Web Guides
                     </span>
-                    <span title={`${topic.youtubeVideos.length} Curated YouTube Playlists`}>
-                      <YoutubeIcon size={14} className="yt-icon" /> {topic.youtubeVideos.length} YouTube Videos
+                    <span title={`${topic.youtubeVideos?.length || 0} Curated YouTube Playlists`}>
+                      <YoutubeIcon size={14} className="yt-icon" /> {topic.youtubeVideos?.length || 0} Videos
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    className="button secondary view-resources-btn"
-                    onClick={() => setSelectedResourceTopic(topic)}
-                  >
-                    <BookOpen size={14} />
-                    <span>Study Resources</span>
-                    <ChevronRight size={14} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="button secondary"
+                      onClick={() => handleToggleTopic(topic.id)}
+                      disabled={isToggling}
+                      style={{ fontSize: '11px', padding: '5px 9px' }}
+                    >
+                      {isCompleted ? 'Uncheck' : 'Mark Completed'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="button secondary view-resources-btn"
+                      onClick={() => setSelectedResourceTopic(topic)}
+                    >
+                      <BookOpen size={13} />
+                      <span>Resources</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
                 </div>
               </article>
             )
@@ -387,86 +501,152 @@ export function CompanyLearningPage() {
         </div>
       )}
 
-      {/* Free Learning Resources Modal */}
+      {/* Learning Resources & Notes Modal */}
       {selectedResourceTopic && (
         <Modal
           close={() => setSelectedResourceTopic(null)}
           onClose={() => setSelectedResourceTopic(null)}
-          title={`Learning Resources: ${selectedResourceTopic.title}`}
-          maxWidth="700px"
+          title={`Study Topic: ${selectedResourceTopic.title}`}
+          maxWidth="720px"
         >
           <div className="resource-modal-content">
             <div className="modal-topic-overview">
-              <span className={`pillar-tag ${selectedResourceTopic.pillar.toLowerCase().replace(/[^a-z]/g, '-')}`}>
-                {selectedResourceTopic.pillar}
-              </span>
-              <p>{selectedResourceTopic.description}</p>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                <span className={`pillar-tag ${selectedResourceTopic.pillar.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                  {selectedResourceTopic.pillar}
+                </span>
+                <span className={`importance-tag ${selectedResourceTopic.importance.toLowerCase()}`}>
+                  {selectedResourceTopic.importance} Importance
+                </span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <Clock size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                  {selectedResourceTopic.estimatedHours}
+                </span>
+                {completedTopicIds.includes(selectedResourceTopic.id) ? (
+                  <span style={{ color: '#16a34a', fontSize: '11px', fontWeight: 700, marginLeft: 'auto' }}>
+                    ✓ Completed on Server
+                  </span>
+                ) : (
+                  <span style={{ color: '#d97706', fontSize: '11px', fontWeight: 600, marginLeft: 'auto' }}>
+                    ○ Incomplete
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>
+                {selectedResourceTopic.description}
+              </p>
             </div>
 
-            {/* Popular Website Links (W3Schools, GFG, MDN, IndiaBIX) */}
+            {/* Key Concepts to Understand */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '12px 14px',
+              margin: '14px 0'
+            }}>
+              <strong style={{ fontSize: '12px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Lightbulb size={14} color="#2563eb" /> Key Concepts to Master:
+              </strong>
+              <ul style={{ margin: '6px 0 0', paddingLeft: '18px', fontSize: '12px', color: '#475569', display: 'grid', gap: '4px' }}>
+                <li>Core theory, syntax, and foundational definitions required for recruitment rounds.</li>
+                <li>Frequently tested interview edge cases, time/space trade-offs, and design patterns.</li>
+                <li>Best practices and architectural principles expected for {activeCompany?.name || 'campus recruitment'}.</li>
+              </ul>
+            </div>
+
+            {/* Verified Documentation & Written Guides */}
             <div className="resource-section">
               <h4 className="resource-section-heading">
                 <Globe size={16} />
-                <span>Popular Website Tutorials & Documentation</span>
+                <span>Verified Documentation & Written Tutorials</span>
               </h4>
               <div className="resource-items-list">
-                {selectedResourceTopic.popularWebsites.map((web, idx) => (
-                  <a
-                    key={idx}
-                    href={web.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="resource-item-link"
-                  >
-                    <div className="resource-item-icon web-icon">
-                      <Globe size={16} />
-                    </div>
-                    <div className="resource-item-details">
-                      <strong>{web.title}</strong>
-                      <span>Provider: <b>{web.provider}</b></span>
-                    </div>
-                    <div className="resource-open-action">
-                      <span>Visit Site</span>
-                      <ExternalLink size={14} />
-                    </div>
-                  </a>
-                ))}
+                {selectedResourceTopic.popularWebsites && selectedResourceTopic.popularWebsites.length > 0 ? (
+                  selectedResourceTopic.popularWebsites.map((web, idx) => (
+                    <a
+                      key={idx}
+                      href={web.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="resource-item-link"
+                    >
+                      <div className="resource-item-icon web-icon">
+                        <Globe size={16} />
+                      </div>
+                      <div className="resource-item-details">
+                        <strong>{web.title}</strong>
+                        <span>Source: <b>{web.provider}</b></span>
+                      </div>
+                      <div className="resource-open-action">
+                        <span>Open Guide</span>
+                        <ExternalLink size={14} />
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#94a3b8' }}>No external documentation mapped for this topic.</p>
+                )}
               </div>
             </div>
 
-            {/* Curated YouTube Video Links / Playlists */}
+            {/* Curated YouTube Video Playlists */}
             <div className="resource-section">
               <h4 className="resource-section-heading">
                 <YoutubeIcon size={16} className="yt-icon" />
-                <span>Curated YouTube Video Lectures & Playlists</span>
+                <span>Curated Video Playlists & Masterclasses</span>
               </h4>
               <div className="resource-items-list">
-                {selectedResourceTopic.youtubeVideos.map((yt, idx) => (
-                  <a
-                    key={idx}
-                    href={yt.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="resource-item-link yt-link"
-                  >
-                    <div className="resource-item-icon yt-icon-box">
-                      <YoutubeIcon size={16} />
-                    </div>
-                    <div className="resource-item-details">
-                      <strong>{yt.title}</strong>
-                      <span>Instructor / Channel: <b>{yt.channel}</b> · Duration: {yt.duration}</span>
-                    </div>
-                    <div className="resource-open-action yt-action">
-                      <span>Watch</span>
-                      <ExternalLink size={14} />
-                    </div>
-                  </a>
-                ))}
+                {selectedResourceTopic.youtubeVideos && selectedResourceTopic.youtubeVideos.length > 0 ? (
+                  selectedResourceTopic.youtubeVideos.map((vid, idx) => (
+                    <a
+                      key={idx}
+                      href={vid.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="resource-item-link"
+                    >
+                      <div className="resource-item-icon yt-icon">
+                        <YoutubeIcon size={16} />
+                      </div>
+                      <div className="resource-item-details">
+                        <strong>{vid.title}</strong>
+                        <span>Channel: <b>{vid.channel}</b> · Duration: {vid.duration}</span>
+                      </div>
+                      <div className="resource-open-action">
+                        <span>Watch Video</span>
+                        <ExternalLink size={14} />
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#94a3b8' }}>No video playlists mapped for this topic.</p>
+                )}
               </div>
             </div>
 
-            {/* Mark as complete toggle inside modal */}
-            <div className="modal-completion-footer">
+            {/* Explicit Notice */}
+            <p style={{
+              margin: '14px 0 0',
+              fontSize: '11px',
+              color: '#64748b',
+              background: '#f8fafc',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <strong>Note:</strong> Opening this topic or external resources does not automatically mark it as completed. Use the button below to update your completion status when you are ready.
+            </p>
+
+            {/* Modal Action Footer: Explicit Toggle */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderTop: '1px solid #e2e8f0',
+              paddingTop: '14px',
+              marginTop: '14px'
+            }}>
               <button
                 type="button"
                 className={`button ${completedTopicIds.includes(selectedResourceTopic.id) ? 'secondary' : 'primary'}`}
@@ -474,15 +654,21 @@ export function CompanyLearningPage() {
               >
                 {completedTopicIds.includes(selectedResourceTopic.id) ? (
                   <>
-                    <CheckCircle2 size={16} />
-                    <span>Completed (Click to unmark)</span>
+                    <CheckCircle2 size={15} color="#16a34a" /> Marked Completed (Click to Uncheck)
                   </>
                 ) : (
                   <>
-                    <Check size={16} />
-                    <span>Mark This Topic Complete</span>
+                    <Check size={15} /> Mark Topic as Completed
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setSelectedResourceTopic(null)}
+              >
+                Close
               </button>
             </div>
           </div>

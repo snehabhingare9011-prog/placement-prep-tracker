@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Bookmark,
   CheckCircle2,
@@ -21,6 +22,7 @@ import api from '../api/client'
 
 export function PracticePage() {
   const { user, showToast } = useAuth()
+  const [searchParams] = useSearchParams()
 
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,8 +31,16 @@ export function PracticePage() {
 
   // Filters
   const [search, setSearch] = useState('')
-  const [subject, setSubject] = useState('All subjects')
+  const initialCategory = searchParams.get('category') || searchParams.get('subject') || 'All subjects'
+  const [subject, setSubject] = useState(initialCategory)
   const [difficulty, setDifficulty] = useState('All difficulties')
+
+  useEffect(() => {
+    const cat = searchParams.get('category') || searchParams.get('subject')
+    if (cat) {
+      setSubject(cat)
+    }
+  }, [searchParams])
 
   // Attempt state
   const [selectedOption, setSelectedOption] = useState(null)

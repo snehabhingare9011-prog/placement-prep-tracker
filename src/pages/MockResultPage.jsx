@@ -149,16 +149,16 @@ export function MockResultPage() {
           <h2>Recommended Actions</h2>
           <ol className="result-next-list">
             {result.weakTopics?.length > 0 ? (
-              <li>Practice targeted problems in <b>{result.weakTopics[0]}</b> before taking another test.</li>
+              <li>Study targeted topics in <b>{result.weakTopics[0]}</b> in the Preparation Hub before taking another test.</li>
             ) : (
-              <li>Maintain your accuracy by practicing 3 daily high-frequency questions.</li>
+              <li>Review the question explanations below to internalize optimal problem-solving approaches.</li>
             )}
-            <li>Check your updated <b>Readiness Score</b> on the readiness tab.</li>
-            <li>Review the question explanations below to internalize optimal time complexities.</li>
+            <li>Check your updated <b>Preparation Score</b> on the readiness tab.</li>
+            <li>Take another timed assessment once you revise weak areas.</li>
           </ol>
 
-          <Link to="/practice" className="button secondary" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>
-            <Target size={15} /> Practice Weak Topics
+          <Link to="/company-prep" className="button secondary" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>
+            <BookOpen size={15} /> Study Weak Topics in Prep Hub
           </Link>
         </article>
       </section>

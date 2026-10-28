@@ -10,7 +10,7 @@ import SkeletonLoader from '../components/common/SkeletonLoader'
 import api from '../api/client'
 
 export function CompaniesPage() {
-  const { user, setTarget } = useAuth()
+  const { user, setTarget, showToast } = useAuth()
   const navigate = useNavigate()
 
   const [companies, setCompanies] = useState([])
@@ -18,6 +18,7 @@ export function CompaniesPage() {
   const [query, setQuery] = useState('')
   const [difficulty, setDifficulty] = useState('All')
   const [comparison, setComparison] = useState([])
+  const [settingTargetId, setSettingTargetId] = useState(null)
 
   const currentCompanyId = user?.targetCompany?._id || user?.targetCompany
 
@@ -55,16 +56,37 @@ export function CompaniesPage() {
     }
   }
 
+  const handlePrepareNow = async (company) => {
+    setSettingTargetId(company._id)
+    try {
+      const role = company.roles?.[0] || 'Software Engineer'
+      await setTarget(company._id, role)
+      navigate('/dashboard')
+    } catch (err) {
+      if (showToast) showToast(err.message || 'Failed to set target', 'danger')
+    } finally {
+      setSettingTargetId(null)
+    }
+  }
+
   const handleSetTarget = async (company) => {
-    await setTarget(company._id, company.roles[0])
+    setSettingTargetId(company._id)
+    try {
+      const role = company.roles?.[0] || 'Software Engineer'
+      await setTarget(company._id, role)
+    } catch (err) {
+      if (showToast) showToast(err.message || 'Failed to set target', 'danger')
+    } finally {
+      setSettingTargetId(null)
+    }
   }
 
   return (
     <div className="companies-page">
       <PageHeader
-        eyebrow="COMPANY EXPLORER & BLUEPRINTS"
-        title="Prepare for the companies you want."
-        description="Compare recruitment patterns, essential skill requirements, and your calculated readiness."
+        eyebrow="TARGET COMPANY DIRECTORY"
+        title="Select or Change Your Target Company & Role"
+        description="Browse recruiting partner companies, inspect selection rounds, package bands, and activate your target to customize your entire preparation workspace."
       >
         {comparison.length > 0 && (
           <button
@@ -189,12 +211,14 @@ export function CompaniesPage() {
                 </div>
 
                 <div className="company-card-actions">
-                  <Link
-                    to={`/company-prep?company=${company._id || company.code}`}
+                  <button
+                    type="button"
                     className="button primary prepare-btn"
+                    onClick={() => handlePrepareNow(company)}
+                    disabled={settingTargetId === company._id}
                   >
-                    Prepare Now <ArrowRight size={13} />
-                  </Link>
+                    {settingTargetId === company._id ? 'Updating...' : isTarget ? 'Continue Prep' : 'Prepare Now'} <ArrowRight size={13} />
+                  </button>
 
                   <div className="company-secondary-actions">
                     <Link
@@ -209,8 +233,9 @@ export function CompaniesPage() {
                         type="button"
                         className="button secondary target-btn"
                         onClick={() => handleSetTarget(company)}
+                        disabled={settingTargetId === company._id}
                       >
-                        Target
+                        {settingTargetId === company._id ? '...' : 'Target'}
                       </button>
                     )}
                   </div>

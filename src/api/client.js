@@ -98,7 +98,7 @@ export const api = {
 
   // Roadmaps
   roadmaps: {
-    get: () => client.get('/roadmaps'),
+    get: (params) => client.get('/roadmaps', { params }),
     generate: (companyId, role, availableWeeks) => client.post('/roadmaps', { companyId, role, availableWeeks }),
     toggleTask: (roadmapId, taskId) => client.patch(`/roadmaps/${roadmapId}/tasks/${taskId}`)
   },
@@ -109,8 +109,8 @@ export const api = {
     getByCompany: (companyId, roles) => client.get(`/curriculum/company/${companyId}`, {
       params: { roles: Array.isArray(roles) ? roles.join(',') : roles }
     }),
-    getUserProgress: () => client.get('/curriculum/user-progress'),
-    toggleTopic: (topicId) => client.patch('/curriculum/toggle-topic', { topicId }),
+    getUserProgress: (params) => client.get('/curriculum/user-progress', { params }),
+    toggleTopic: (topicId, companyId, role) => client.patch('/curriculum/toggle-topic', { topicId, companyId, role }),
     updateRoles: (roles) => client.patch('/curriculum/roles', { roles })
   },
 
@@ -118,7 +118,7 @@ export const api = {
   readiness: {
     getOverall: (params) => client.get('/readiness', { params }),
     getCompanyReadiness: (companyId, roleId) => client.get(`/readiness/company/${companyId}${roleId ? `/role/${roleId}` : ''}`),
-    getStudentAnalytics: () => client.get('/readiness/analytics/student')
+    getStudentAnalytics: (params) => client.get('/readiness/analytics/student', { params })
   },
 
   // Placement Drives & Announcements

@@ -123,14 +123,52 @@ export async function setTargetGoal(req, res, next) {
 
     const targetRole = role || company.roles[0] || 'Software Engineer'
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      {
-        targetCompany: company._id,
-        currentTargetRole: targetRole
-      },
-      { new: true }
-    ).populate('targetCompany')
+    const userDoc = await User.findById(req.user._id)
+    if (!userDoc) {
+      return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    if (!userDoc.targetProgress) {
+      userDoc.targetProgress = []
+    }
+
+    // Preserve previous target's completed topics
+    if (userDoc.targetCompany) {
+      const oldCompanyId = userDoc.targetCompany.toString()
+      const oldRole = userDoc.currentTargetRole || ''
+      const existingIdx = userDoc.targetProgress.findIndex(
+        tp => tp.company?.toString() === oldCompanyId && (tp.role === oldRole || !tp.role)
+      )
+      if (existingIdx >= 0) {
+        userDoc.targetProgress[existingIdx].completedTopics = userDoc.completedTopics || []
+      } else {
+        userDoc.targetProgress.push({
+          company: userDoc.targetCompany,
+          role: oldRole,
+          completedTopics: userDoc.completedTopics || []
+        })
+      }
+    }
+
+    // Load or initialize new target's completed topics
+    const newEntry = userDoc.targetProgress.find(
+      tp => tp.company?.toString() === company._id.toString() && (tp.role === targetRole || !tp.role)
+    )
+    if (newEntry) {
+      userDoc.completedTopics = newEntry.completedTopics || []
+    } else {
+      userDoc.completedTopics = []
+      userDoc.targetProgress.push({
+        company: company._id,
+        role: targetRole,
+        completedTopics: []
+      })
+    }
+
+    userDoc.targetCompany = company._id
+    userDoc.currentTargetRole = targetRole
+    await userDoc.save()
+    await userDoc.populate('targetCompany')
 
     await ActivityLog.create({
       user: req.user._id,
@@ -143,7 +181,7 @@ export async function setTargetGoal(req, res, next) {
     res.json({
       success: true,
       message: `Target set to ${company.name} · ${targetRole}`,
-      user
+      user: userDoc
     })
   } catch (error) {
     next(error)

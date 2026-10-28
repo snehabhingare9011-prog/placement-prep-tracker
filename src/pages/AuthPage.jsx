@@ -43,6 +43,7 @@ export function AuthPage({ initialMode = 'login' }) {
       const user = await login(email, password)
       if (user.role === 'admin') navigate('/admin')
       else if (user.role === 'placement_officer' || user.role === 'faculty') navigate('/placement-portal')
+      else if (!user.targetCompany) navigate('/onboarding')
       else navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Login failed. Please verify credentials.')
@@ -56,7 +57,7 @@ export function AuthPage({ initialMode = 'login' }) {
     setError('')
     setLoading(true)
     try {
-      await register({
+      const user = await register({
         name,
         email,
         password,
@@ -66,7 +67,8 @@ export function AuthPage({ initialMode = 'login' }) {
         graduationYear: Number(graduationYear),
         cgpa: Number(cgpa)
       })
-      navigate('/dashboard')
+      if (!user?.targetCompany) navigate('/onboarding')
+      else navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Registration failed.')
     } finally {

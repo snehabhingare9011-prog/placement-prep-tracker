@@ -109,12 +109,12 @@ Create a `.env` file in the `server/` directory (or use `.env.example`):
 ```env
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/hireverse?retryWrites=true&w=majority
 JWT_SECRET=hireverse_jwt_dev_secret_key_change_in_production_2026
 JWT_EXPIRES_IN=7d
 FRONTEND_URL=http://localhost:5173
 ```
-> **Note:** If `MONGODB_URI` is left blank or a local MongoDB daemon is not running, the application automatically launches an embedded in-memory MongoDB instance for immediate out-of-the-box development and testing! To connect to MongoDB Atlas or local MongoDB, simply set `MONGODB_URI=mongodb+srv://...` or `mongodb://127.0.0.1:27017/hireverse`.
+> **Note:** Configure `MONGODB_URI` with your MongoDB Atlas cloud database connection string. Ensure your Atlas Database User is created and your IP address (or `0.0.0.0/0`) is added to Atlas Network Access. Automated unit/integration tests run in an isolated in-memory database to keep cloud data untouched.
 
 ### 3. Database Seeding
 Seed realistic sample companies, questions, mock tests, demo accounts, and placement drives:

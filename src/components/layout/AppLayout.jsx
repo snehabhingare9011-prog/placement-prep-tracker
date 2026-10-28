@@ -28,7 +28,7 @@ export function AppLayout() {
         />
 
         <main className="content">
-          <Outlet />
+          <Outlet context={{ onOpenTarget: () => setTargetModalOpen(true) }} />
         </main>
       </div>
 

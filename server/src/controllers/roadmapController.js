@@ -8,26 +8,43 @@ import { generateRoadmapForStudent } from '../services/roadmapService.js'
 // @access Private
 export async function getRoadmap(req, res, next) {
   try {
-    let roadmap = await Roadmap.findOne({ user: req.user._id })
-      .populate('company', 'name code mark color difficulty roles')
-      .sort({ updatedAt: -1 })
+    const targetCompanyId = req.query.companyId || req.user.targetCompany
+    const targetRole = req.query.role || req.user.currentTargetRole || 'Software Engineer'
 
-    // If no roadmap exists yet, create one for student's target company or first company
+    let roadmap = null
+
+    if (targetCompanyId) {
+      roadmap = await Roadmap.findOne({ user: req.user._id, company: targetCompanyId })
+        .populate('company', 'name code mark color difficulty roles')
+        .sort({ updatedAt: -1 })
+    }
+
+    if (!roadmap && targetCompanyId) {
+      const generated = await generateRoadmapForStudent(
+        req.user._id,
+        targetCompanyId,
+        targetRole,
+        8
+      )
+      roadmap = await Roadmap.findById(generated._id).populate('company', 'name code mark color difficulty roles')
+    }
+
     if (!roadmap) {
-      let companyId = req.user.targetCompany
-      if (!companyId) {
-        const firstCo = await Company.findOne({ isActive: true })
-        if (firstCo) companyId = firstCo._id
-      }
+      roadmap = await Roadmap.findOne({ user: req.user._id })
+        .populate('company', 'name code mark color difficulty roles')
+        .sort({ updatedAt: -1 })
 
-      if (companyId) {
-        roadmap = await generateRoadmapForStudent(
-          req.user._id,
-          companyId,
-          req.user.currentTargetRole || 'Software Engineer',
-          8
-        )
-        roadmap = await Roadmap.findById(roadmap._id).populate('company', 'name code mark color difficulty roles')
+      if (!roadmap) {
+        const firstCo = await Company.findOne({ isActive: true })
+        if (firstCo) {
+          const generated = await generateRoadmapForStudent(
+            req.user._id,
+            firstCo._id,
+            'Software Engineer',
+            8
+          )
+          roadmap = await Roadmap.findById(generated._id).populate('company', 'name code mark color difficulty roles')
+        }
       }
     }
 

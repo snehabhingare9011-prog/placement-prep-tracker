@@ -34,8 +34,14 @@ router.use('/roadmaps', roadmapRoutes)
 router.use('/readiness', readinessRoutes)
 router.use('/analytics', readinessRoutes) // allows /analytics/student
 router.use('/placement', placementRoutes)
-router.use('/placement-drives', placementRoutes)
-router.use('/announcements', placementRoutes)
+router.use('/placement-drives', (req, res, next) => {
+  req.url = req.url === '/' ? '/drives' : `/drives${req.url}`
+  placementRoutes(req, res, next)
+})
+router.use('/announcements', (req, res, next) => {
+  req.url = req.url === '/' ? '/announcements' : `/announcements${req.url}`
+  placementRoutes(req, res, next)
+})
 router.use('/admin', adminRoutes)
 router.use('/curriculum', curriculumRoutes)
 

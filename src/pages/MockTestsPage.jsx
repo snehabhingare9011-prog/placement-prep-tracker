@@ -8,7 +8,9 @@ import {
   ArrowRight,
   ShieldAlert,
   CheckCircle2,
-  Play
+  Play,
+  Sparkles,
+  Building2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
@@ -21,10 +23,22 @@ export function MockTestsPage() {
   const { user, showToast } = useAuth()
   const navigate = useNavigate()
 
+  const targetCompanyId = user?.targetCompany?._id || user?.targetCompany
+  const targetCompanyName = user?.targetCompany?.name || 'Target Company'
+  const targetRole = user?.currentTargetRole || 'Software Engineer'
+
+  const [activeTab, setActiveTab] = useState(targetCompanyId ? 'target' : 'all')
   const [tests, setTests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedTestForStart, setSelectedTestForStart] = useState(null)
   const [starting, setStarting] = useState(false)
+
+  // Sync tab if user target changes
+  useEffect(() => {
+    if (targetCompanyId) {
+      setActiveTab('target')
+    }
+  }, [targetCompanyId])
 
   useEffect(() => {
     async function fetchTests() {
@@ -41,7 +55,7 @@ export function MockTestsPage() {
       }
     }
     fetchTests()
-  }, [])
+  }, [targetCompanyId])
 
   const handleStartExam = async () => {
     if (!selectedTestForStart) return
@@ -60,6 +74,14 @@ export function MockTestsPage() {
     }
   }
 
+  const targetTests = tests.filter(test => {
+    if (!targetCompanyId) return false
+    const testCompId = test.company?._id || test.company
+    return testCompId && testCompId.toString() === targetCompanyId.toString()
+  })
+
+  const displayedTests = (activeTab === 'target' && targetCompanyId) ? targetTests : tests
+
   return (
     <div className="mock-tests-page">
       <PageHeader
@@ -68,56 +90,153 @@ export function MockTestsPage() {
         description="Simulate real company screening rounds under strict exam timing, negative marking, and server-side evaluation."
       />
 
+      {/* View Switcher Tabs */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '24px',
+        borderBottom: '1px solid #e2e8f0',
+        paddingBottom: '12px'
+      }}>
+        {targetCompanyId && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('target')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: activeTab === 'target' ? '1px solid #2563eb' : '1px solid #e2e8f0',
+              background: activeTab === 'target' ? '#eff6ff' : '#ffffff',
+              color: activeTab === 'target' ? '#1d4ed8' : '#64748b',
+              fontWeight: 600,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Sparkles size={14} /> Target Company Tests ({targetCompanyName}) · {targetTests.length}
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('all')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: activeTab === 'all' ? '1px solid #2563eb' : '1px solid #e2e8f0',
+            background: activeTab === 'all' ? '#eff6ff' : '#ffffff',
+            color: activeTab === 'all' ? '#1d4ed8' : '#64748b',
+            fontWeight: 600,
+            fontSize: '13px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          All Mock Tests · {tests.length}
+        </button>
+      </div>
+
       {loading ? (
         <SkeletonLoader rows={4} height={140} />
+      ) : displayedTests.length === 0 ? (
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '40px 24px',
+          textAlign: 'center',
+          maxWidth: '560px',
+          margin: '0 auto'
+        }}>
+          <Building2 size={36} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>
+            No assessments tagged specifically for {targetCompanyName} yet
+          </h3>
+          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
+            You can take general mock assessments across DSA, Aptitude, and CS fundamentals while specific company tests are calibrated.
+          </p>
+          <button
+            type="button"
+            className="button"
+            onClick={() => setActiveTab('all')}
+          >
+            Browse All Mock Tests
+          </button>
+        </div>
       ) : (
         <div className="tests-grid">
-          {tests.map(test => (
-            <article key={test._id} className="mock-test-card">
-              <div className="test-card-header">
-                <div className="test-badge-row">
-                  {test.company && <CompanyMark company={test.company} />}
-                  <span className={`difficulty-badge ${test.difficulty?.toLowerCase()}`}>
-                    {test.difficulty}
-                  </span>
-                  <span className="category-tag">{test.category}</span>
+          {displayedTests.map(test => {
+            const isTargetMatch = targetCompanyId && (test.company?._id || test.company)?.toString() === targetCompanyId.toString()
+            return (
+              <article key={test._id} className="mock-test-card" style={isTargetMatch ? { borderColor: '#93c5fd' } : {}}>
+                <div className="test-card-header">
+                  <div className="test-badge-row">
+                    {test.company && <CompanyMark company={test.company} />}
+                    {isTargetMatch && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        border: '1px solid #bfdbfe',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 700
+                      }}>
+                        <Sparkles size={11} /> Target Match
+                      </span>
+                    )}
+                    <span className={`difficulty-badge ${test.difficulty?.toLowerCase()}`}>
+                      {test.difficulty}
+                    </span>
+                    <span className="category-tag">{test.category}</span>
+                  </div>
+                  {test.bestAttempt && (
+                    <span className="best-score-badge">
+                      Best: <b>{test.bestAttempt.percentage}%</b>
+                    </span>
+                  )}
                 </div>
-                {test.bestAttempt && (
-                  <span className="best-score-badge">
-                    Best: <b>{test.bestAttempt.percentage}%</b>
-                  </span>
-                )}
-              </div>
 
-              <h2>{test.title}</h2>
-              <p className="test-description-text">{test.description}</p>
+                <h2>{test.title}</h2>
+                <p className="test-description-text">{test.description}</p>
 
-              <div className="test-specs-row">
-                <div>
-                  <Clock size={15} />
-                  <span>{test.durationMinutes} Minutes</span>
+                <div className="test-specs-row">
+                  <div>
+                    <Clock size={15} />
+                    <span>{test.durationMinutes} Minutes</span>
+                  </div>
+                  <div>
+                    <FileCheck2 size={15} />
+                    <span>{test.questionCount} Questions</span>
+                  </div>
+                  <div>
+                    <Award size={15} />
+                    <span>{test.totalMarks} Marks (+{test.marksPerQuestion} / -{test.negativeMarking})</span>
+                  </div>
                 </div>
-                <div>
-                  <FileCheck2 size={15} />
-                  <span>{test.questionCount} Questions</span>
-                </div>
-                <div>
-                  <Award size={15} />
-                  <span>{test.totalMarks} Marks (+{test.marksPerQuestion} / -{test.negativeMarking})</span>
-                </div>
-              </div>
 
-              <div className="test-card-footer">
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => setSelectedTestForStart(test)}
-                >
-                  <Play size={15} /> Start Assessment
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className="test-card-footer">
+                  <button
+                    type="button"
+                    className="button"
+                    onClick={() => setSelectedTestForStart(test)}
+                  >
+                    <Play size={15} /> Start Assessment
+                  </button>
+                </div>
+              </article>
+            )
+          })}
         </div>
       )}
 

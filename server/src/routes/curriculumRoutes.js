@@ -67,14 +67,31 @@ router.get('/company/:companyId', async (req, res) => {
 router.get('/user-progress', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate('targetCompany')
-    const completedTopics = user.completedTopics || []
-    const selectedRoles = user.selectedRoles?.length > 0 ? user.selectedRoles : (user.targetRoles || ['Full Stack Developer'])
+    const companyId = req.query.companyId || user.targetCompany?._id || user.targetCompany
+    const role = req.query.role || user.currentTargetRole
+
+    let completedTopics = user.completedTopics || []
+    if (companyId && user.targetProgress?.length > 0) {
+      const entry = user.targetProgress.find(
+        tp => tp.company?.toString() === companyId.toString() && (!role || tp.role === role || !tp.role)
+      )
+      if (entry) {
+        completedTopics = entry.completedTopics || []
+      }
+    }
+
+    const selectedRoles = user.selectedRoles?.length > 0 ? user.selectedRoles : (user.targetRoles || [role || 'Full Stack Developer'])
 
     let totalTopics = 0
     let progressPercentage = 0
 
-    if (user.targetCompany) {
-      const curriculum = getCurriculumForCompany(user.targetCompany, selectedRoles)
+    let company = user.targetCompany
+    if (companyId && (!company || company._id?.toString() !== companyId.toString())) {
+      company = await Company.findById(companyId)
+    }
+
+    if (company) {
+      const curriculum = getCurriculumForCompany(company, selectedRoles)
       totalTopics = curriculum.totalTopics
       const completedCount = curriculum.topics.filter(t => completedTopics.includes(t.id)).length
       progressPercentage = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0
@@ -95,29 +112,69 @@ router.get('/user-progress', authenticate, async (req, res) => {
 // PATCH /api/v1/curriculum/toggle-topic
 router.patch('/toggle-topic', authenticate, async (req, res) => {
   try {
-    const { topicId } = req.body
+    const { topicId, companyId: paramCompanyId, role: paramRole } = req.body
     if (!topicId) {
       return res.status(400).json({ success: false, message: 'topicId is required' })
     }
 
     const user = await User.findById(req.user._id).populate('targetCompany')
-    let completedTopics = user.completedTopics || []
+    const activeCompanyId = paramCompanyId || user.targetCompany?._id || user.targetCompany
+    const activeRole = paramRole || user.currentTargetRole || 'Software Engineer'
 
-    if (completedTopics.includes(topicId)) {
-      completedTopics = completedTopics.filter(id => id !== topicId)
-    } else {
-      completedTopics.push(topicId)
+    if (!user.targetProgress) {
+      user.targetProgress = []
     }
 
-    user.completedTopics = completedTopics
+    let targetEntry = null
+    if (activeCompanyId) {
+      targetEntry = user.targetProgress.find(
+        tp => tp.company?.toString() === activeCompanyId.toString() && (tp.role === activeRole || !tp.role)
+      )
+      if (!targetEntry) {
+        targetEntry = {
+          company: activeCompanyId,
+          role: activeRole,
+          completedTopics: user.completedTopics?.length > 0 ? [...user.completedTopics] : []
+        }
+        user.targetProgress.push(targetEntry)
+      }
+    }
+
+    let completedTopics = targetEntry ? targetEntry.completedTopics : (user.completedTopics || [])
+
+    let isCompleted = false
+    if (completedTopics.includes(topicId)) {
+      completedTopics = completedTopics.filter(id => id !== topicId)
+      isCompleted = false
+    } else {
+      completedTopics.push(topicId)
+      isCompleted = true
+    }
+
+    if (targetEntry) {
+      targetEntry.completedTopics = completedTopics
+    }
+
+    const currentTargetId = user.targetCompany?._id || user.targetCompany
+    const isCurrentActiveTarget = !paramCompanyId || paramCompanyId.toString() === currentTargetId?.toString()
+    if (isCurrentActiveTarget) {
+      user.completedTopics = completedTopics
+    }
+
+    user.markModified('targetProgress')
     await user.save()
 
-    const selectedRoles = user.selectedRoles?.length > 0 ? user.selectedRoles : (user.targetRoles || ['Full Stack Developer'])
+    const selectedRoles = user.selectedRoles?.length > 0 ? user.selectedRoles : (user.targetRoles || [activeRole])
     let progressPercentage = 0
     let totalTopics = 0
 
-    if (user.targetCompany) {
-      const curriculum = getCurriculumForCompany(user.targetCompany, selectedRoles)
+    let company = user.targetCompany
+    if (activeCompanyId && (!company || company._id?.toString() !== activeCompanyId.toString())) {
+      company = await Company.findById(activeCompanyId)
+    }
+
+    if (company) {
+      const curriculum = getCurriculumForCompany(company, selectedRoles)
       totalTopics = curriculum.totalTopics
       const completedCount = curriculum.topics.filter(t => completedTopics.includes(t.id)).length
       progressPercentage = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0
@@ -126,7 +183,7 @@ router.patch('/toggle-topic', authenticate, async (req, res) => {
     res.json({
       success: true,
       completedTopics,
-      isCompleted: completedTopics.includes(topicId),
+      isCompleted,
       totalTopics,
       progressPercentage
     })

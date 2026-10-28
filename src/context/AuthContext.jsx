@@ -109,9 +109,12 @@ export function AuthProvider({ children }) {
         setUser(res.user)
         localStorage.setItem('hireverse_user', JSON.stringify(res.user))
         showToast(res.message || 'Target goal updated', 'success')
+        return res.user
       }
+      throw new Error(res.message || 'Failed to update target')
     } catch (err) {
       showToast(err.message, 'warning')
+      throw err
     }
   }
 

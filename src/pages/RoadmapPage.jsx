@@ -10,7 +10,12 @@ import {
   AlertTriangle,
   ArrowRight,
   Filter,
-  Code2
+  Code2,
+  BookOpen,
+  Check,
+  Target,
+  FileCheck2,
+  Layers
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
@@ -35,19 +40,22 @@ export function RoadmapPage() {
   const [availableWeeks, setAvailableWeeks] = useState(8)
   const [regenerating, setRegenerating] = useState(false)
 
+  const targetCompanyId = user?.targetCompany?._id || user?.targetCompany
+  const targetRole = user?.currentTargetRole || 'Software Engineer'
+
   useEffect(() => {
     async function loadRoadmap() {
       setLoading(true)
       try {
         const [roadmapRes, companiesRes] = await Promise.all([
-          api.roadmaps.get(),
+          api.roadmaps.get({ companyId: targetCompanyId, role: targetRole }),
           api.companies.getAll()
         ])
 
         if (roadmapRes.success && roadmapRes.roadmap) {
           setRoadmap(roadmapRes.roadmap)
-          setSelectedCompanyId(roadmapRes.roadmap.company?._id || '')
-          setSelectedRole(roadmapRes.roadmap.role || '')
+          setSelectedCompanyId(roadmapRes.roadmap.company?._id || targetCompanyId || '')
+          setSelectedRole(roadmapRes.roadmap.role || targetRole || '')
         }
         if (companiesRes.success && companiesRes.companies) {
           setCompanies(companiesRes.companies)
@@ -59,7 +67,7 @@ export function RoadmapPage() {
       }
     }
     loadRoadmap()
-  }, [])
+  }, [targetCompanyId, targetRole])
 
   const handleToggleTask = async (taskId) => {
     if (!roadmap) return
@@ -113,27 +121,34 @@ export function RoadmapPage() {
 
   const allTasks = roadmap?.phases?.flatMap(p => p.tasks) || []
   const completedTasks = allTasks.filter(t => t.completed)
+  const remainingTasks = allTasks.filter(t => !t.completed)
   const progressPct = roadmap?.progressPercentage || 0
 
   const company = roadmap?.company || user?.targetCompany || {
-    name: 'Accenture',
-    mark: '>',
-    color: '#a100ff'
+    name: 'Selected Company',
+    mark: 'H',
+    color: '#2563eb'
   }
+
+  // Next prioritized incomplete task
+  const nextIncompleteTask = remainingTasks[0] || null
 
   return (
     <div className="roadmap-page">
       <PageHeader
-        eyebrow="TARGET CURRICULUM"
-        title="Your Preparation Roadmap"
-        description={`${company.name} · ${roadmap?.role || 'Software Engineer'} · 4-phase structured preparation curriculum.`}
+        eyebrow="TARGET PREPARATION TIMELINE"
+        title="Follow Your Recommended Preparation Sequence"
+        description={`${company.name} · ${roadmap?.role || targetRole} · 4-phase structured milestones indicating what to study first, next, and after that.`}
       >
+        <Link to="/company-prep" className="button secondary">
+          <BookOpen size={15} /> Preparation Hub
+        </Link>
         <button
           type="button"
           className="button secondary"
           onClick={() => setRegenModalOpen(true)}
         >
-          <RotateCcw size={15} /> Configure & Regenerate
+          <RotateCcw size={15} /> Configure Timeline
         </button>
       </PageHeader>
 
@@ -142,22 +157,70 @@ export function RoadmapPage() {
         <div className="roadmap-strip-left">
           <CompanyMark company={company} large />
           <div>
-            <span>TARGET MILESTONES</span>
-            <h2>{roadmap?.role || 'Software Engineer'} at {company.name}</h2>
+            <span>TARGET ROADMAP</span>
+            <h2>{roadmap?.role || targetRole} at {company.name}</h2>
             <p>
-              {completedTasks.length} of {allTasks.length} tasks completed ({progressPct}% progress)
+              {completedTasks.length} of {allTasks.length} tasks completed ({progressPct}% progress · {remainingTasks.length} milestones remaining)
             </p>
           </div>
         </div>
 
         <div className="roadmap-strip-meter">
           <div className="meter-numbers">
-            <span>Overall Progress</span>
+            <span>Overall Roadmap Completion</span>
             <b>{progressPct}%</b>
           </div>
           <ProgressBar value={progressPct} tone="blue" showValue={false} height={10} />
         </div>
       </section>
+
+      {/* Highlighted Next Incomplete Milestone */}
+      {nextIncompleteTask && (
+        <section style={{
+          background: '#ffffff',
+          border: '1px solid #bfdbfe',
+          borderLeft: '4px solid #2563eb',
+          borderRadius: '8px',
+          padding: '16px 20px',
+          margin: '20px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: '1 1 320px' }}>
+            <div style={{ background: '#eff6ff', color: '#2563eb', padding: '10px', borderRadius: '8px' }}>
+              <Milestone size={22} />
+            </div>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px' }}>
+                NEXT RECOMMENDED STEP
+              </span>
+              <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block', marginTop: '2px' }}>
+                {nextIncompleteTask.title}
+              </strong>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                {nextIncompleteTask.detail || `${nextIncompleteTask.subject} milestone`}. Estimated effort: {nextIncompleteTask.estimatedMinutes || 30} mins.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              className="button"
+              onClick={() => handleToggleTask(nextIncompleteTask.taskId)}
+            >
+              <Check size={14} /> Mark as Finished
+            </button>
+            <Link to="/company-prep" className="button secondary">
+              <BookOpen size={14} /> Study in Prep Hub
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Filter Tabs */}
       <div className="roadmap-filter-tabs">
@@ -166,14 +229,14 @@ export function RoadmapPage() {
           className={`filter-tab ${filterMode === 'all' ? 'active' : ''}`}
           onClick={() => setFilterMode('all')}
         >
-          All Tasks ({allTasks.length})
+          All Milestones ({allTasks.length})
         </button>
         <button
           type="button"
           className={`filter-tab ${filterMode === 'pending' ? 'active' : ''}`}
           onClick={() => setFilterMode('pending')}
         >
-          Pending ({allTasks.length - completedTasks.length})
+          Remaining ({remainingTasks.length})
         </button>
         <button
           type="button"
@@ -194,6 +257,7 @@ export function RoadmapPage() {
           })
 
           const doneInPhase = phase.tasks.filter(t => t.completed).length
+          const phasePct = phase.tasks.length > 0 ? Math.round((doneInPhase / phase.tasks.length) * 100) : 0
 
           return (
             <article key={phase.phaseNumber || pIdx} className="journey-step">
@@ -202,11 +266,16 @@ export function RoadmapPage() {
                 <div className="step-info">
                   <small>PHASE {phase.phaseNumber}</small>
                   <h2>{phase.title}</h2>
-                  <p>{phase.subtitle}</p>
+                  <p>{phase.subtitle || `Focus on ${phase.title.toLowerCase()} for ${company.name}`}</p>
                 </div>
-                <b className="step-progress-label">
-                  {doneInPhase}/{phase.tasks.length} Done
-                </b>
+                <div style={{ textAlign: 'right' }}>
+                  <b className="step-progress-label">
+                    {doneInPhase} of {phase.tasks.length} Done ({phasePct}%)
+                  </b>
+                  <div style={{ width: '120px', marginTop: '6px' }}>
+                    <ProgressBar value={phasePct} tone={phasePct === 100 ? 'green' : 'blue'} showValue={false} height={4} />
+                  </div>
+                </div>
               </header>
 
               <div className="phase-tasks-list">
@@ -220,6 +289,7 @@ export function RoadmapPage() {
                       className="task-check-circle"
                       onClick={() => handleToggleTask(task.taskId)}
                       aria-label="Toggle task status"
+                      title={task.completed ? 'Mark incomplete' : 'Mark complete'}
                     >
                       {task.completed && <CheckCircle2 size={16} />}
                     </button>
@@ -237,15 +307,15 @@ export function RoadmapPage() {
                         <span><Clock size={12} /> {task.estimatedMinutes} min</span>
                         {task.dueDate && (
                           <span>
-                            <Calendar size={12} /> Due: {new Date(task.dueDate).toLocaleDateString()}
+                            <Calendar size={12} /> Target: {new Date(task.dueDate).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                     </div>
 
                     <div className="task-card-action">
-                      <Link to="/practice" className="button secondary text-btn">
-                        Practice <ArrowRight size={13} />
+                      <Link to="/company-prep" className="button secondary text-btn">
+                        Study Topic <ArrowRight size={13} />
                       </Link>
                     </div>
                   </div>
@@ -263,23 +333,20 @@ export function RoadmapPage() {
       {/* Regeneration Modal */}
       {regenModalOpen && (
         <Modal
-          title="Regenerate Preparation Roadmap"
+          title="Configure Preparation Roadmap"
           close={() => setRegenModalOpen(false)}
         >
           <p className="modal-copy">
-            HireVerse uses transparent, deterministic rules to generate your roadmap based on required company skills and your past mock test performance.
+            HireVerse adjusts your milestone timeline based on required skills for {company.name} and your target weeks before campus placement.
           </p>
 
-          <div className="modal-form-fields">
-            <label className="field-label">
-              Target Company
+          <div className="modal-form-fields" style={{ display: 'grid', gap: '14px', margin: '16px 0' }}>
+            <label className="field-label" style={{ display: 'grid', gap: '6px', fontSize: '12px' }}>
+              <span>Target Company</span>
               <select
                 value={selectedCompanyId}
-                onChange={(e) => {
-                  setSelectedCompanyId(e.target.value)
-                  const comp = companies.find(c => c._id === e.target.value)
-                  if (comp && comp.roles?.length > 0) setSelectedRole(comp.roles[0])
-                }}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                style={{ height: '36px', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0 8px' }}
               >
                 {companies.map(c => (
                   <option key={c._id} value={c._id}>{c.name}</option>
@@ -287,35 +354,34 @@ export function RoadmapPage() {
               </select>
             </label>
 
-            <label className="field-label">
-              Target Role
+            <label className="field-label" style={{ display: 'grid', gap: '6px', fontSize: '12px' }}>
+              <span>Target Job Role</span>
               <input
                 type="text"
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
                 placeholder="e.g. Software Engineer"
+                style={{ height: '36px', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0 8px' }}
               />
             </label>
 
-            <label className="field-label">
-              Available Preparation Weeks
-              <select
+            <label className="field-label" style={{ display: 'grid', gap: '6px', fontSize: '12px' }}>
+              <span>Available Preparation Weeks ({availableWeeks} weeks)</span>
+              <input
+                type="range"
+                min="4"
+                max="16"
                 value={availableWeeks}
                 onChange={(e) => setAvailableWeeks(Number(e.target.value))}
-              >
-                <option value={4}>4 Weeks (Intensive Sprint)</option>
-                <option value={8}>8 Weeks (Standard Recommended)</option>
-                <option value={12}>12 Weeks (Comprehensive)</option>
-              </select>
+              />
             </label>
           </div>
 
-          <div className="modal-actions">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button
               type="button"
               className="button secondary"
               onClick={() => setRegenModalOpen(false)}
-              disabled={regenerating}
             >
               Cancel
             </button>
@@ -325,7 +391,7 @@ export function RoadmapPage() {
               onClick={handleRegenerateRoadmap}
               disabled={regenerating}
             >
-              {regenerating ? 'Generating...' : 'Generate Roadmap'}
+              {regenerating ? 'Regenerating...' : 'Regenerate Timeline'}
             </button>
           </div>
         </Modal>

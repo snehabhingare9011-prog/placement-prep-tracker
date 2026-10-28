@@ -49,6 +49,8 @@ export function TargetModal({ close }) {
     try {
       await setTarget(selectedCompanyId, selectedRole)
       close()
+    } catch (err) {
+      // Keep modal open so student can fix or retry
     } finally {
       setSaving(false)
     }
@@ -57,7 +59,7 @@ export function TargetModal({ close }) {
   return (
     <Modal title="Change Placement Target" close={close}>
       <p className="modal-copy">
-        Your preparation roadmap, diagnostic readiness score, and practice recommendations will dynamically adapt to this company and role.
+        Your preparation roadmap, curriculum learning topics, and mock assessments will dynamically adapt to this company and role.
       </p>
 
       {loading ? (

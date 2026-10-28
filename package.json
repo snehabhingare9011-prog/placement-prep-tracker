@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "server": "node server/src/server.js",
     "seed": "node server/scripts/seed.js",
+    "verify:db": "node server/scripts/verify-atlas.js",
     "test:server": "cd server && npm test"
   },
   "dependencies": {

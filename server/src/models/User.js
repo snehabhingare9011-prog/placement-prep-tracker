@@ -73,6 +73,22 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
+    targetProgress: [
+      {
+        company: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Company'
+        },
+        role: {
+          type: String,
+          default: ''
+        },
+        completedTopics: {
+          type: [String],
+          default: []
+        }
+      }
+    ],
     status: {
       type: String,
       enum: ['active', 'inactive'],
@@ -87,13 +103,12 @@ const userSchema = new mongoose.Schema(
 )
 
 // Pre-save password hashing
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    return next()
+    return
   }
   const salt = await bcrypt.genSalt(10)
   this.password = await bcrypt.hash(this.password, salt)
-  next()
 })
 
 // Compare candidate password

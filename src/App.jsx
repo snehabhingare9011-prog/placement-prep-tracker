@@ -6,6 +6,7 @@ import ProtectedRoute from './components/common/ProtectedRoute'
 // Pages
 import LandingPage from './pages/LandingPage'
 import AuthPage from './pages/AuthPage'
+import OnboardingPage from './pages/OnboardingPage'
 import DashboardPage from './pages/DashboardPage'
 import CompaniesPage from './pages/CompaniesPage'
 import CompanyGuidePage from './pages/CompanyGuidePage'
@@ -18,6 +19,8 @@ import ReadinessPage from './pages/ReadinessPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage'
 import AiInterviewPage from './pages/AiInterviewPage'
+import PracticePage from './pages/PracticePage'
+import PlacementDrivesPage from './pages/PlacementDrivesPage'
 import PlacementPortalPage from './pages/PlacementPortalPage'
 import AdminPage from './pages/AdminPage'
 
@@ -30,6 +33,14 @@ export function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AuthPage initialMode="login" />} />
           <Route path="/register" element={<AuthPage initialMode="register" />} />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Authenticated Application Shell */}
           <Route
@@ -49,6 +60,8 @@ export function App() {
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/readiness" element={<ReadinessPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/practice" element={<Navigate to="/company-prep" replace />} />
+            <Route path="/placement-drives" element={<PlacementDrivesPage />} />
             <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
             <Route path="/ai-interview" element={<AiInterviewPage />} />
 

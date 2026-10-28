@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Local database storage
+.mongo-data/

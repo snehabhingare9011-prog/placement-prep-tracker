@@ -26,11 +26,16 @@ export function errorHandler(err, req, res, next) {
     message = errors.join(', ')
   }
 
+  // Sanitize message to never leak DB credentials
+  message = message.replace(/:([^:@]+)@/, ':****@')
+
   console.error(`[Error] [${req.method}] ${req.originalUrl} - ${message}`)
+
+  const sanitizedStack = err.stack ? err.stack.replace(/:([^:@]+)@/g, ':****@') : undefined
 
   res.status(statusCode).json({
     success: false,
     message,
-    ...(ENV.NODE_ENV === 'development' && { stack: err.stack })
+    ...(ENV.NODE_ENV === 'development' && { stack: sanitizedStack })
   })
 }

@@ -49,12 +49,18 @@ export async function getStudentAnalytics(req, res, next) {
 
     // Fetch past 30 days of activities
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    const [activities, practiceAttempts, testAttempts, targetCompanies] = await Promise.all([
+    let [activities, practiceAttempts, testAttempts, targetCompanies] = await Promise.all([
       ActivityLog.find({ user: userId, createdAt: { $gte: thirtyDaysAgo } }).sort({ createdAt: 1 }).lean(),
       PracticeAttempt.find({ user: userId }).populate('question', 'subject topic difficulty').lean(),
       TestAttempt.find({ user: userId, status: 'completed' }).populate('test', 'title category').sort({ submittedAt: 1 }).lean(),
       Company.find({ isActive: true }).limit(5).lean()
     ])
+
+    const activeTargetId = req.user.targetCompany?._id || req.user.targetCompany
+    if (activeTargetId && !targetCompanies.some(c => c._id.toString() === activeTargetId.toString())) {
+      const activeCo = await Company.findById(activeTargetId).lean()
+      if (activeCo) targetCompanies.unshift(activeCo)
+    }
 
     // Calculate real activity streak
     const activityDays = new Set(
@@ -117,12 +123,13 @@ export async function getStudentAnalytics(req, res, next) {
     // Company readiness comparison
     const companyComparison = await Promise.all(
       targetCompanies.map(async c => {
-        const r = await calculateReadiness(userId, c._id)
+        const r = await calculateReadiness(userId, c._id, req.user.currentTargetRole)
         return {
           id: c._id,
           name: c.name,
           mark: c.mark,
           color: c.color,
+          isCurrentTarget: activeTargetId?.toString() === c._id.toString(),
           readiness: r.overallScore || 50
         }
       })
@@ -131,6 +138,10 @@ export async function getStudentAnalytics(req, res, next) {
     res.json({
       success: true,
       analytics: {
+        activeTarget: {
+          companyId: activeTargetId,
+          role: req.user.currentTargetRole
+        },
         currentStreak,
         totalQuestionsSolved: solvedCount,
         totalAttempts: practiceAttempts.length,

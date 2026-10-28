@@ -133,6 +133,8 @@ export async function startTest(req, res, next) {
       attempt = await TestAttempt.create({
         user: req.user._id,
         test: test._id,
+        company: test.company || req.user?.targetCompany,
+        role: test.role || req.user?.currentTargetRole,
         startTime,
         durationMinutes: test.durationMinutes,
         expiryTime,

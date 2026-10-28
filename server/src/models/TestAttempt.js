@@ -42,6 +42,13 @@ const testAttemptSchema = new mongoose.Schema(
       ref: 'Test',
       required: true
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company'
+    },
+    role: {
+      type: String
+    },
     startTime: {
       type: Date,
       required: true,

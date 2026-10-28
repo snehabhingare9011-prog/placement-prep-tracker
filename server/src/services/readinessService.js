@@ -55,11 +55,14 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
     roadmap.phases.forEach(p => {
       (p.tasks || []).forEach(t => {
         if (t.completed && t.taskId) completedTopicSet.add(t.taskId)
+        if (t.completed && t.topicId) completedTopicSet.add(t.topicId)
+        const isDone = !!t.completed || completedTopicSet.has(t.taskId) || (t.topicId && completedTopicSet.has(t.topicId))
         allRoadmapTasks.push({
           taskId: t.taskId,
+          topicId: t.topicId,
           title: t.title,
-          completed: !!t.completed,
-          phaseName: p.name,
+          completed: isDone,
+          phaseName: p.title || p.name || 'Preparation Phase',
           subject: t.subject
         })
       })
@@ -75,14 +78,24 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
   // =========================================================================
   // SECTION A: My Preparation Progress (Roadmap & Curriculum Milestones)
   // =========================================================================
+  // Deduplicate roadmap tasks by topic identity to prevent duplicate counting
+  const uniqueTasksMap = new Map()
+  allRoadmapTasks.forEach(t => {
+    const key = t.topicId || t.taskId || t.title
+    if (!uniqueTasksMap.has(key) || t.completed) {
+      uniqueTasksMap.set(key, t)
+    }
+  })
+  const uniqueTaskList = Array.from(uniqueTasksMap.values())
+
   let prepTotal = 0
   let prepCompleted = 0
   let nextIncomplete = null
 
-  if (allRoadmapTasks.length > 0) {
-    prepTotal = allRoadmapTasks.length
-    prepCompleted = allRoadmapTasks.filter(t => t.completed).length
-    nextIncomplete = allRoadmapTasks.find(t => !t.completed)
+  if (uniqueTaskList.length > 0) {
+    prepTotal = uniqueTaskList.length
+    prepCompleted = uniqueTaskList.filter(t => t.completed).length
+    nextIncomplete = uniqueTaskList.find(t => !t.completed)
   } else if (curriculum && curriculum.topics?.length > 0) {
     prepTotal = curriculum.totalTopics
     prepCompleted = completedCurriculumCount
@@ -98,8 +111,8 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       taskId: nextIncomplete.taskId || nextIncomplete.id,
       title: nextIncomplete.title,
       phaseName: nextIncomplete.phaseName || 'Preparation Phase',
-      hubTopicId: mappedHub ? mappedHub.id : null,
-      hubTopicTitle: mappedHub ? mappedHub.title : null,
+      hubTopicId: mappedHub ? mappedHub.id : (nextIncomplete.topicId || nextIncomplete.taskId || nextIncomplete.id),
+      hubTopicTitle: mappedHub ? mappedHub.title : nextIncomplete.title,
       estimatedHours: mappedHub?.estimatedHours || '3 hrs'
     }
   }
@@ -107,13 +120,13 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
   // Calculate phase progression breakdown
   const phasesProgress = (roadmap?.phases || []).map((p, idx) => {
     const tasks = p.tasks || []
-    const done = tasks.filter(t => t.completed).length
+    const done = tasks.filter(t => t.completed || completedTopicSet.has(t.taskId) || (t.topicId && completedTopicSet.has(t.topicId))).length
     const pct = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0
     const isCompleted = done === tasks.length && tasks.length > 0
-    const isActive = !isCompleted && (idx === 0 || (roadmap.phases[idx - 1]?.tasks || []).every(t => t.completed))
+    const isActive = !isCompleted && (idx === 0 || (roadmap.phases[idx - 1]?.tasks || []).every(t => t.completed || completedTopicSet.has(t.taskId) || (t.topicId && completedTopicSet.has(t.topicId))))
     return {
       phaseNumber: idx + 1,
-      name: p.name,
+      name: p.title || p.name || `Phase ${idx + 1}`,
       total: tasks.length,
       completed: done,
       percentage: pct,
@@ -375,7 +388,7 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
 
   const examAccuracyPercentage = totalAttemptedQuestions > 0
     ? Math.round((totalCorrect / totalAttemptedQuestions) * 100)
-    : 0
+    : null
 
   // Classify each subject into 4 evidence-backed statuses:
   // 1. Strong: >= 3 attempted, >= 70%
@@ -450,10 +463,10 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       })
     })
 
-  // Granular Topic-level strong areas
+  // Granular Topic-level strong areas (require at least 2 questions attempted)
   Array.from(topicStatsMap.values()).forEach(t => {
     const acc = t.attempted > 0 ? Math.round((t.correct / t.attempted) * 100) : 0
-    if (t.attempted >= 1 && acc >= 70) {
+    if (t.attempted >= 2 && acc >= 70) {
       if (!strongAreas.some(sa => sa.name === t.topic)) {
         const hubMatch = mapQuestionAreaToHubTopic(t.topic, t.subject)
         strongAreas.push({
@@ -534,28 +547,11 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
   // =========================================================================
   const nextActions = []
 
-  // Action 1: Revise weakest tested subject or topic
-  const topWeakArea = weakAreas.length > 0 ? weakAreas[0] : null
-  if (topWeakArea) {
-    nextActions.push({
-      priority: 1,
-      badge: 'Priority 1 · Revision Focus',
-      type: 'revision',
-      title: `Revise ${topWeakArea.name}`,
-      description: `Your exam accuracy is ${topWeakArea.accuracy}% across ${topWeakArea.attempted} attempted questions. Revising this area will prevent losing ${topWeakArea.marksLost || 1} marks to negative marking.`,
-      actionText: 'Study in Hub',
-      actionLink: topWeakArea.hubTopicId && activeCompanyId
-        ? `/company-prep?company=${activeCompanyId}&topic=${topWeakArea.hubTopicId}`
-        : `/company-prep?company=${activeCompanyId}`,
-      estimatedHours: topWeakArea.estimatedHours || '2 hrs'
-    })
-  }
-
-  // Action 2: Continue next incomplete roadmap topic
+  // Action 1: Continue Preparation: Next incomplete topic in active roadmap stage
   if (nextIncompleteTopic) {
     nextActions.push({
-      priority: nextActions.length + 1,
-      badge: `Priority ${nextActions.length + 1} · Roadmap Milestone`,
+      priority: 1,
+      badge: 'Priority 1 · Roadmap Milestone',
       type: 'roadmap',
       title: `Complete: ${nextIncompleteTopic.title}`,
       description: `Next incomplete topic in ${nextIncompleteTopic.phaseName}. Study the notes and check it off once completed.`,
@@ -567,38 +563,27 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
     })
   }
 
-  // Action 3: Timed mock test benchmark
-  if (completedAttempts.length === 0) {
+  // Action 2: Improve a Weak Area: Evidenced weak subject or topic
+  const topWeakArea = weakAreas.length > 0 ? weakAreas[0] : null
+  if (topWeakArea) {
     nextActions.push({
-      priority: nextActions.length + 1,
-      badge: `Priority ${nextActions.length + 1} · Benchmark Assessment`,
-      type: 'mock-test',
-      title: `Take ${targetCompany ? targetCompany.name : 'Target'} Diagnostic Mock Test`,
-      description: 'Benchmark exam speed, question accuracy, and negative marking under timed exam conditions.',
-      actionText: 'Take Mock Test',
-      actionLink: '/mock-tests',
-      estimatedHours: '30 mins'
+      priority: 2,
+      badge: 'Priority 2 · Revision Focus',
+      type: 'revision',
+      title: `Revise: ${topWeakArea.name}`,
+      description: `Your exam accuracy is ${topWeakArea.accuracy}% across ${topWeakArea.attempted} attempted questions. Revising this area will prevent losing ${topWeakArea.marksLost || 1} marks to negative marking.`,
+      actionText: 'Study in Hub',
+      actionLink: topWeakArea.hubTopicId && activeCompanyId
+        ? `/company-prep?company=${activeCompanyId}&topic=${topWeakArea.hubTopicId}`
+        : `/company-prep?company=${activeCompanyId}`,
+      estimatedHours: topWeakArea.estimatedHours || '2 hrs'
     })
   } else {
-    nextActions.push({
-      priority: nextActions.length + 1,
-      badge: `Priority ${nextActions.length + 1} · Benchmark Assessment`,
-      type: 'mock-test',
-      title: 'Attempt Another Company Mock Assessment',
-      description: 'Reinforce time management, build testing endurance, and track score improvement across attempts.',
-      actionText: 'Take Mock Test',
-      actionLink: '/mock-tests',
-      estimatedHours: '30 mins'
-    })
-  }
-
-  // If still less than 3 actions, suggest exploring an unattempted subject
-  if (nextActions.length < 3) {
     const unattempted = subjectAnalysis.find(s => s.attempted === 0)
     if (unattempted) {
       nextActions.push({
-        priority: 3,
-        badge: 'Priority 3 · Explore',
+        priority: 2,
+        badge: 'Priority 2 · Explore Topic',
         type: 'explore',
         title: `Explore ${unattempted.name}`,
         description: `You have not attempted any questions in ${unattempted.name} yet. Review foundational notes before testing.`,
@@ -610,6 +595,22 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       })
     }
   }
+
+  // Action 3: Take a Mock Test: Timed mock test benchmark
+  nextActions.push({
+    priority: 3,
+    badge: 'Priority 3 · Benchmark Assessment',
+    type: 'mock-test',
+    title: completedAttempts.length === 0
+      ? `Take ${targetCompany ? targetCompany.name : 'Target'} Diagnostic Mock Test`
+      : `Attempt ${targetCompany ? targetCompany.name : 'Target'} Mock Assessment`,
+    description: completedAttempts.length === 0
+      ? 'Benchmark exam speed, question accuracy, and negative marking under timed exam conditions.'
+      : 'Reinforce time management, build testing endurance, and track score improvement across attempts.',
+    actionText: 'Take Mock Test',
+    actionLink: '/mock-tests',
+    estimatedHours: '30 mins'
+  })
 
   const prioritizedNextActions = nextActions.slice(0, 3)
 

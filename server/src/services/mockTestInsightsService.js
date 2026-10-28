@@ -43,13 +43,19 @@ export function mapQuestionAreaToHubTopic(topicName, subjectName = '') {
 export async function generateMockTestInsights(userId, companyId = null, role = null) {
   // Available target assessments count
   const allTests = await Test.find({ isPublished: true }).lean().catch(() => [])
-  const availableTests = allTests.filter(t => {
+  let availableTests = allTests.filter(t => {
     if (!companyId) return true
     const cId = (t.company?._id || t.company)?.toString()
     if (cId !== companyId.toString()) return false
     if (!t.role || !role) return true
     return t.role.toLowerCase() === role.toLowerCase()
   })
+  if (availableTests.length === 0 && companyId) {
+    availableTests = allTests.filter(t => {
+      const cId = (t.company?._id || t.company)?.toString()
+      return cId === companyId.toString()
+    })
+  }
   const availableAssessments = availableTests.length
 
   // Query all completed attempts for the user
@@ -78,6 +84,13 @@ export async function generateMockTestInsights(userId, companyId = null, role = 
       }
       return true
     })
+
+    if (targetFilteredAttempts.length === 0) {
+      targetFilteredAttempts = attempts.filter(a => {
+        const aCompId = (a.company?._id || a.company || a.test?.company?._id || a.test?.company)?.toString()
+        return aCompId === companyId.toString()
+      })
+    }
   }
 
   const analysisAttempts = targetFilteredAttempts

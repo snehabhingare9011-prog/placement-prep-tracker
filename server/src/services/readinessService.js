@@ -140,13 +140,21 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
   // =========================================================================
   // 1. Fetch available published assessments matching target company and role
   const allTargetTests = await Test.find({ isPublished: true }).lean().catch(() => [])
-  const matchingAvailableTests = allTargetTests.filter(test => {
+  let matchingAvailableTests = allTargetTests.filter(test => {
     if (!activeCompanyId) return true
     const testCompId = (test.company?._id || test.company)?.toString()
     if (testCompId !== activeCompanyId.toString()) return false
     if (!test.role || !activeRole) return true
     return test.role.toLowerCase() === activeRole.toLowerCase()
   })
+
+  // If no tests match exact role for this company, check if the company has any published assessments
+  if (matchingAvailableTests.length === 0 && activeCompanyId) {
+    matchingAvailableTests = allTargetTests.filter(test => {
+      const testCompId = (test.company?._id || test.company)?.toString()
+      return testCompId === activeCompanyId.toString()
+    })
+  }
   const availableAssessments = matchingAvailableTests.length
 
   // 2. Filter user's completed test attempts strictly for active target company and role
@@ -162,6 +170,14 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       }
       return true
     })
+
+    // If student has no attempts matching the exact role, check if student has attempts for this company
+    if (relevantTests.length === 0) {
+      relevantTests = testAttempts.filter(t => {
+        const tCompId = (t.company?._id || t.company || t.test?.company?._id || t.test?.company)?.toString()
+        return tCompId === activeCompanyId.toString()
+      })
+    }
   } else {
     relevantTests = testAttempts
   }

@@ -34,6 +34,7 @@ export function ReadinessPage() {
   const { user } = useAuth()
   const [readiness, setReadiness] = useState(null)
   const [companyDetails, setCompanyDetails] = useState(null)
+  const [availableTestCount, setAvailableTestCount] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('all') // 'all' | 'weak' | 'strong'
 
@@ -45,9 +46,10 @@ export function ReadinessPage() {
     async function loadReadinessAndCompany() {
       setLoading(true)
       try {
-        const [readinessRes, companyRes] = await Promise.all([
+        const [readinessRes, companyRes, testsRes] = await Promise.all([
           api.readiness.getOverall({ companyId: targetCompanyId, role: targetRole }).catch(() => ({ success: false })),
-          targetCompanyId ? api.companies.getById(targetCompanyId).catch(() => ({ success: false })) : Promise.resolve({ success: false })
+          targetCompanyId ? api.companies.getById(targetCompanyId).catch(() => ({ success: false })) : Promise.resolve({ success: false }),
+          api.tests.getAll().catch(() => ({ success: false }))
         ])
 
         if (readinessRes.success && readinessRes.readiness) {
@@ -58,6 +60,23 @@ export function ReadinessPage() {
           setCompanyDetails(companyRes.company)
         } else if (user?.targetCompany?.name) {
           setCompanyDetails(user.targetCompany)
+        }
+
+        if (testsRes.success && Array.isArray(testsRes.tests)) {
+          let matching = testsRes.tests.filter(test => {
+            if (!targetCompanyId) return true
+            const testCompId = (test.company?._id || test.company)?.toString()
+            if (testCompId !== targetCompanyId.toString()) return false
+            if (!test.role || !targetRole) return true
+            return test.role.toLowerCase() === targetRole.toLowerCase()
+          })
+          if (matching.length === 0 && targetCompanyId) {
+            matching = testsRes.tests.filter(test => {
+              const testCompId = (test.company?._id || test.company)?.toString()
+              return testCompId === targetCompanyId.toString()
+            })
+          }
+          setAvailableTestCount(matching.length)
         }
       } catch (err) {
         console.error('Failed to load readiness data:', err)
@@ -108,7 +127,9 @@ export function ReadinessPage() {
     recentTestHistory: []
   }
 
-  const availableAssessments = mockPerformance.availableAssessments ?? readiness?.metrics?.availableAssessments ?? 0
+  const availableAssessments = (mockPerformance.availableAssessments !== undefined && mockPerformance.availableAssessments !== null && mockPerformance.availableAssessments > 0)
+    ? mockPerformance.availableAssessments
+    : (availableTestCount !== null && availableTestCount > 0 ? availableTestCount : (mockPerformance.availableAssessments ?? readiness?.metrics?.availableAssessments ?? 0))
   const submittedAttempts = mockPerformance.submittedAttempts ?? mockPerformance.testsCompleted ?? readiness?.metrics?.submittedAttempts ?? 0
   const uniqueAssessmentsCompleted = mockPerformance.uniqueAssessmentsCompleted ?? readiness?.metrics?.uniqueAssessmentsCompleted ?? 0
 

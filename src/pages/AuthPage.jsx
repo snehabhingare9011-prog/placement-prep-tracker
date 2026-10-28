@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ShieldCheck, UserCheck, ArrowRight, Lock, Mail, User, GraduationCap, Building } from 'lucide-react'
+import { ArrowRight, Lock, Mail } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
 
@@ -27,13 +27,6 @@ export function AuthPage({ initialMode = 'login' }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
-
-  // Quick fill helper for demonstration
-  const handleQuickFill = (demoEmail, demoPassword) => {
-    setEmail(demoEmail)
-    setPassword(demoPassword)
-    setError('')
-  }
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
@@ -182,44 +175,9 @@ export function AuthPage({ initialMode = 'login' }) {
               </label>
 
               <button type="submit" className="button auth-submit-btn" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In to Workspace'} <ArrowRight size={16} />
+                {loading ? 'Signing In...' : 'Sign In'} <ArrowRight size={16} />
               </button>
             </form>
-
-            {/* Demo Quick Fill Badges for Evaluators */}
-            <div className="demo-accounts-panel">
-              <p>Demo accounts for testing & demonstration:</p>
-              <div className="demo-chips">
-                <button
-                  type="button"
-                  className="demo-chip"
-                  onClick={() => handleQuickFill('student@hireverse.dev', 'Student@123')}
-                >
-                  <User size={13} /> Student (Arjun)
-                </button>
-                <button
-                  type="button"
-                  className="demo-chip"
-                  onClick={() => handleQuickFill('placement@hireverse.dev', 'Officer@123')}
-                >
-                  <GraduationCap size={13} /> Placement Officer
-                </button>
-                <button
-                  type="button"
-                  className="demo-chip"
-                  onClick={() => handleQuickFill('faculty@hireverse.dev', 'Faculty@123')}
-                >
-                  <Building size={13} /> Faculty Mentor
-                </button>
-                <button
-                  type="button"
-                  className="demo-chip"
-                  onClick={() => handleQuickFill('admin@hireverse.dev', 'Admin@123')}
-                >
-                  <ShieldCheck size={13} /> System Admin
-                </button>
-              </div>
-            </div>
           </>
         )}
 

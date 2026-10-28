@@ -1353,6 +1353,13 @@
 }
 
 @media (max-width: 480px) {
+  .auth-container {
+    padding: 16px;
+  }
+  .auth-card {
+    padding: 28px 20px;
+    border-radius: 8px;
+  }
   .hero-content h1 {
     font-size: 26px;
   }

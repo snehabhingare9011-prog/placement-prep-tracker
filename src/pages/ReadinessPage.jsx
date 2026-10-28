@@ -94,6 +94,9 @@ export function ReadinessPage() {
   }
 
   const mockPerformance = readiness?.mockPerformance || {
+    availableAssessments: readiness?.metrics?.availableAssessments || 0,
+    submittedAttempts: readiness?.metrics?.submittedAttempts || readiness?.metrics?.testsCompleted || 0,
+    uniqueAssessmentsCompleted: readiness?.metrics?.uniqueAssessmentsCompleted || 0,
     testsCompleted: readiness?.metrics?.testsCompleted || 0,
     averageScorePercentage: readiness?.metrics?.averageTestScore ?? null,
     totalAttemptedQuestions: 0,
@@ -105,7 +108,11 @@ export function ReadinessPage() {
     recentTestHistory: []
   }
 
-  const hasSubmittedMockTests = (mockPerformance.testsCompleted || 0) > 0
+  const availableAssessments = mockPerformance.availableAssessments ?? readiness?.metrics?.availableAssessments ?? 0
+  const submittedAttempts = mockPerformance.submittedAttempts ?? mockPerformance.testsCompleted ?? readiness?.metrics?.submittedAttempts ?? 0
+  const uniqueAssessmentsCompleted = mockPerformance.uniqueAssessmentsCompleted ?? readiness?.metrics?.uniqueAssessmentsCompleted ?? 0
+
+  const hasSubmittedMockTests = submittedAttempts > 0
   const hasAttemptedQuestions = (mockPerformance.totalAttemptedQuestions || 0) > 0
 
   const subjectAnalysis = readiness?.subjectAnalysis || []
@@ -117,7 +124,7 @@ export function ReadinessPage() {
   // Dynamic readiness level badge
   const readinessTier = preparation.percentage >= 75 && (mockPerformance.averageScorePercentage || 0) >= 70
     ? { label: 'Placement Ready', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' }
-    : preparation.percentage >= 40 || (mockPerformance.testsCompleted || 0) >= 2
+    : preparation.percentage >= 40 || submittedAttempts >= 2
     ? { label: 'Advancing Tier', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' }
     : { label: 'Foundation Tier', color: '#d97706', bg: '#fffbeb', border: '#fef3c7' }
 
@@ -207,6 +214,15 @@ export function ReadinessPage() {
           <div className="readiness-header-stat-item">
             <span>Roadmap Progress</span>
             <strong>{preparation.completedTopics} / {preparation.totalTopics}</strong>
+          </div>
+          <div className="readiness-header-stat-item">
+            <span>Mock Assessments</span>
+            <strong>
+              {uniqueAssessmentsCompleted} / {availableAssessments}
+              <small style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', marginLeft: '4px' }}>
+                ({submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'})
+              </small>
+            </strong>
           </div>
           <Link to="/companies" className="button secondary" style={{ fontSize: '12px', height: 'fit-content' }}>
             <Building2 size={13} /> Change Target
@@ -329,14 +345,62 @@ export function ReadinessPage() {
             Calculated with timed negative marking (+4 correct, -1 incorrect). Abandoned tests are excluded.
           </p>
 
+          {/* Three Distinct Assessment Metrics */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '10px',
+            marginBottom: '14px',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '12px 14px'
+          }}>
+            <div>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
+                Available Assessments
+              </span>
+              <strong style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                {availableAssessments}
+              </strong>
+              <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block' }}>
+                Target role tests
+              </span>
+            </div>
+
+            <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
+                Submitted Attempts
+              </span>
+              <strong style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb' }}>
+                {submittedAttempts}
+              </strong>
+              <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block' }}>
+                {submittedAttempts > uniqueAssessmentsCompleted ? `Incl. ${submittedAttempts - uniqueAssessmentsCompleted} retake(s)` : 'Submissions'}
+              </span>
+            </div>
+
+            <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
+                Unique Completed
+              </span>
+              <strong style={{ fontSize: '18px', fontWeight: 800, color: uniqueAssessmentsCompleted > 0 ? '#16a34a' : '#64748b' }}>
+                {uniqueAssessmentsCompleted} / {availableAssessments}
+              </strong>
+              <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block' }}>
+                Distinct test{uniqueAssessmentsCompleted === 1 ? '' : 's'}
+              </span>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '10px' }}>
             {mockPerformance.averageScorePercentage !== null ? (
               <>
                 <strong style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a' }}>
                   {mockPerformance.averageScorePercentage}%
                 </strong>
-                <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>
-                  Average score across {mockPerformance.testsCompleted} test{mockPerformance.testsCompleted === 1 ? '' : 's'}
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+                  Average score across {submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'} ({uniqueAssessmentsCompleted} of {availableAssessments} unique assessment{availableAssessments === 1 ? '' : 's'} completed)
                 </span>
               </>
             ) : (
@@ -384,7 +448,7 @@ export function ReadinessPage() {
           {/* Submitted Test History List */}
           <div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
-              RECENT SUBMITTED TESTS ({mockPerformance.recentTestHistory.length})
+              RECENT SUBMISSION ATTEMPTS ({mockPerformance.recentTestHistory.length})
             </span>
 
             {mockPerformance.recentTestHistory.length > 0 ? (
@@ -507,16 +571,32 @@ export function ReadinessPage() {
             {/* Performance Summary */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
               gap: '12px',
               marginBottom: '20px'
             }}>
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Submitted Mock Tests
+                  Available Assessments
                 </span>
                 <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {mockPerformance.testsCompleted} test{mockPerformance.testsCompleted === 1 ? '' : 's'}
+                  {availableAssessments} test{availableAssessments === 1 ? '' : 's'}
+                </strong>
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Submitted Attempts
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#2563eb' }}>
+                  {submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'}
+                </strong>
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Unique Completed
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  {uniqueAssessmentsCompleted} of {availableAssessments}
                 </strong>
               </div>
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
@@ -543,7 +623,7 @@ export function ReadinessPage() {
                 Subject-Wise Insights Pending
               </h3>
               <p style={{ fontSize: '13.5px', color: '#64748b', maxWidth: '560px', margin: '0 auto 20px', lineHeight: 1.55 }}>
-                You have submitted {mockPerformance.testsCompleted} mock test{mockPerformance.testsCompleted === 1 ? '' : 's'}, but no questions were attempted or mapped to technical subjects. Detailed strong and weak area diagnostics will appear once you answer questions in an assessment.
+                You have submitted {submittedAttempts} mock test attempt{submittedAttempts === 1 ? '' : 's'} ({uniqueAssessmentsCompleted} of {availableAssessments} unique assessment{availableAssessments === 1 ? '' : 's'}), but no questions were attempted or mapped to technical subjects. Detailed strong and weak area diagnostics will appear once you answer questions in an assessment.
               </p>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <Link to="/mock-tests" className="button primary">
@@ -568,16 +648,34 @@ export function ReadinessPage() {
             {/* 1. Performance Summary Strip */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
               gap: '12px',
               marginBottom: '20px'
             }}>
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
-                  Submitted Mock Tests
+                  Available Assessments
                 </span>
                 <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {mockPerformance.testsCompleted} test{mockPerformance.testsCompleted === 1 ? '' : 's'}
+                  {availableAssessments} test{availableAssessments === 1 ? '' : 's'}
+                </strong>
+              </div>
+
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Submitted Attempts
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#2563eb' }}>
+                  {submittedAttempts} attempt{submittedAttempts === 1 ? '' : 's'}
+                </strong>
+              </div>
+
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Unique Completed
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: uniqueAssessmentsCompleted > 0 ? '#16a34a' : '#64748b' }}>
+                  {uniqueAssessmentsCompleted} of {availableAssessments}
                 </strong>
               </div>
 

@@ -137,4 +137,57 @@ describe('Readiness Scoring & Preparation Roadmap Engine', () => {
     assert.strictEqual(toggleRes.body.success, true)
     assert.ok(typeof toggleRes.body.progressPercentage === 'number')
   })
+
+  test('Readiness: correctly distinguishes Available Assessments, Submitted Attempts, and Unique Completed with target isolation', async () => {
+    // 1. Initial Accenture target check for student
+    const initialRes = await request
+      .get('/api/v1/readiness')
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(initialRes.status, 200)
+    assert.strictEqual(initialRes.body.readiness.mockPerformance.availableAssessments, 1)
+    assert.strictEqual(initialRes.body.readiness.mockPerformance.submittedAttempts, 1)
+    assert.strictEqual(initialRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 1)
+
+    // 2. Student retakes the exact same test
+    const testsRes = await request.get('/api/v1/tests')
+    const accentureTest = testsRes.body.tests.find(t => t.title.includes('Accenture'))
+    assert.ok(accentureTest)
+
+    const startRes = await request
+      .post(`/api/v1/tests/${accentureTest._id}/start`)
+      .set('Authorization', `Bearer ${studentToken}`)
+    assert.strictEqual(startRes.status, 200)
+
+    const attemptId = startRes.body.attemptId
+    const submitRes = await request
+      .post(`/api/v1/test-attempts/attempts/${attemptId}/submit`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({
+        answers: accentureTest.questions.map(qId => ({ questionId: qId, selectedOption: 1 }))
+      })
+    assert.strictEqual(submitRes.status, 200)
+
+    // 3. Re-check Accenture readiness: submittedAttempts increments, uniqueAssessmentsCompleted stays 1
+    const retakeRes = await request
+      .get('/api/v1/readiness')
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(retakeRes.body.readiness.mockPerformance.availableAssessments, 1)
+    assert.strictEqual(retakeRes.body.readiness.mockPerformance.submittedAttempts, 2)
+    assert.strictEqual(retakeRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 1)
+
+    // 4. Target Isolation: Query for Microsoft (where student has 0 attempts)
+    const microsoftCompany = testsRes.body.tests.find(t => t.title.includes('Microsoft') || t.title.includes('Core CS'))?.company
+    assert.ok(microsoftCompany)
+
+    const msftRes = await request
+      .get(`/api/v1/readiness?companyId=${microsoftCompany._id || microsoftCompany}&role=Software%20Engineer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+
+    assert.strictEqual(msftRes.status, 200)
+    assert.strictEqual(msftRes.body.readiness.mockPerformance.availableAssessments, 1)
+    assert.strictEqual(msftRes.body.readiness.mockPerformance.submittedAttempts, 0)
+    assert.strictEqual(msftRes.body.readiness.mockPerformance.uniqueAssessmentsCompleted, 0)
+  })
 })

@@ -648,37 +648,40 @@ export async function seedDatabase() {
     }
   ])
 
-  // 7. Seed Completed Mock Test Attempt for Arjun Sharma
-  const test1 = seededTests[0]
+  // 7. Seed Completed Mock Test Attempt for Arjun Sharma (Accenture Diagnostic)
+  const test1 = seededTests[1]
   await TestAttempt.create({
     user: studentUser._id,
     test: test1._id,
+    company: companyMap.get('accenture')._id,
+    role: 'Full Stack Developer',
     startTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     durationMinutes: test1.durationMinutes,
-    expiryTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
-    submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 38 * 60 * 1000),
+    expiryTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+    submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 25 * 60 * 1000),
     status: 'completed',
     answers: [
-      { questionId: seededQuestions[0]._id, selectedOption: 1, markedForReview: false },
-      { questionId: seededQuestions[1]._id, selectedOption: 1, markedForReview: false },
-      { questionId: seededQuestions[4]._id, selectedOption: 1, markedForReview: false },
-      { questionId: seededQuestions[8]._id, selectedOption: 0, markedForReview: true },
       { questionId: seededQuestions[2]._id, selectedOption: 2, markedForReview: false },
-      { questionId: seededQuestions[7]._id, selectedOption: 1, markedForReview: false }
+      { questionId: seededQuestions[3]._id, selectedOption: 1, markedForReview: false },
+      { questionId: seededQuestions[5]._id, selectedOption: 1, markedForReview: false },
+      { questionId: seededQuestions[6]._id, selectedOption: 1, markedForReview: false },
+      { questionId: seededQuestions[7]._id, selectedOption: 0, markedForReview: true }
     ],
     result: {
-      score: 19,
-      maxScore: 24,
-      percentage: 79,
-      correctCount: 5,
+      score: 15,
+      maxScore: 20,
+      percentage: 75,
+      correctCount: 4,
       incorrectCount: 1,
       unansweredCount: 0,
-      timeTakenSeconds: 2280,
+      timeTakenSeconds: 1500,
       subjectBreakdown: [
-        { subject: 'DSA', totalQuestions: 3, correctQuestions: 2, score: 7, percentage: 67 },
-        { subject: 'Core CS', totalQuestions: 3, correctQuestions: 3, score: 12, percentage: 100 }
+        { subject: 'DBMS', totalQuestions: 1, correctQuestions: 1, score: 4, percentage: 100 },
+        { subject: 'SQL', totalQuestions: 2, correctQuestions: 2, score: 8, percentage: 100 },
+        { subject: 'Aptitude', totalQuestions: 1, correctQuestions: 1, score: 4, percentage: 100 },
+        { subject: 'OOP', totalQuestions: 1, correctQuestions: 0, score: -1, percentage: 0 }
       ],
-      weakTopics: ['Graphs']
+      weakTopics: ['OOP']
     }
   })
 

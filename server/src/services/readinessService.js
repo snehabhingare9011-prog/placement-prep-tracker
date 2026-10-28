@@ -136,23 +136,46 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
 
   // =========================================================================
   // SECTION B: My Mock-Test Performance (Real submitted test attempts)
+  // Strictly isolated by authenticated student, target company, and target role
   // =========================================================================
+  // 1. Fetch available published assessments matching target company and role
+  const allTargetTests = await Test.find({ isPublished: true }).lean().catch(() => [])
+  const matchingAvailableTests = allTargetTests.filter(test => {
+    if (!activeCompanyId) return true
+    const testCompId = (test.company?._id || test.company)?.toString()
+    if (testCompId !== activeCompanyId.toString()) return false
+    if (!test.role || !activeRole) return true
+    return test.role.toLowerCase() === activeRole.toLowerCase()
+  })
+  const availableAssessments = matchingAvailableTests.length
+
+  // 2. Filter user's completed test attempts strictly for active target company and role
   let relevantTests = []
-  if (activeCompanyId && testAttempts.length > 0) {
-    const companyMatches = testAttempts.filter(t => {
+  if (activeCompanyId) {
+    relevantTests = testAttempts.filter(t => {
       const tCompId = (t.company?._id || t.company || t.test?.company?._id || t.test?.company)?.toString()
-      return tCompId === activeCompanyId.toString()
+      if (tCompId !== activeCompanyId.toString()) return false
+
+      const tRole = t.role || t.test?.role
+      if (tRole && activeRole) {
+        return tRole.toLowerCase() === activeRole.toLowerCase()
+      }
+      return true
     })
-    if (companyMatches.length > 0) {
-      relevantTests = companyMatches
-    } else {
-      relevantTests = testAttempts
-    }
   } else {
     relevantTests = testAttempts
   }
 
   const completedAttempts = relevantTests.filter(t => t.status === 'completed')
+  const submittedAttempts = completedAttempts.length
+
+  // Distinct completed assessment IDs
+  const uniqueCompletedAssessmentIds = new Set(
+    completedAttempts
+      .map(t => (t.test?._id || t.test)?.toString())
+      .filter(Boolean)
+  )
+  const uniqueAssessmentsCompleted = uniqueCompletedAssessmentIds.size
   const testScores = completedAttempts.map(t => t.result?.percentage ?? 0)
   const averageTestScore = testScores.length > 0
     ? Math.round(testScores.reduce((a, b) => a + b, 0) / testScores.length)
@@ -249,7 +272,10 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
         phasesProgress: []
       },
       mockPerformance: {
-        testsCompleted: completedAttempts.length,
+        availableAssessments,
+        submittedAttempts,
+        uniqueAssessmentsCompleted,
+        testsCompleted: submittedAttempts,
         averageScorePercentage: null,
         totalAttemptedQuestions: 0,
         totalCorrect: 0,
@@ -262,7 +288,10 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       subjectAnalysis: emptySubjectAnalysis,
       nextActions: baselineActions,
       metrics: {
-        testsCompleted: completedAttempts.length,
+        availableAssessments,
+        submittedAttempts,
+        uniqueAssessmentsCompleted,
+        testsCompleted: submittedAttempts,
         averageTestScore: null,
         preparationProgress,
         roadmapCompletion: preparationProgress,
@@ -645,7 +674,9 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
           roundType: rnd.roundType,
           status: completedAttempts.length > 0 ? 'Completed' : 'Pending',
           score: averageTestScore,
-          detail: completedAttempts.length > 0 ? `${completedAttempts.length} mock test(s) submitted (${averageTestScore}% average)` : 'No mock test submitted yet'
+          detail: completedAttempts.length > 0
+            ? `${submittedAttempts} attempt${submittedAttempts === 1 ? '' : 's'} across ${uniqueAssessmentsCompleted} of ${availableAssessments} unique assessment${availableAssessments === 1 ? '' : 's'} (${averageTestScore}% average)`
+            : 'No mock test submitted yet'
         }
       } else {
         const phase = roadmap?.phases?.[idx]
@@ -680,7 +711,10 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
       phasesProgress
     },
     mockPerformance: {
-      testsCompleted: completedAttempts.length,
+      availableAssessments,
+      submittedAttempts,
+      uniqueAssessmentsCompleted,
+      testsCompleted: submittedAttempts,
       averageScorePercentage: averageTestScore,
       totalAttemptedQuestions,
       totalCorrect,
@@ -693,7 +727,10 @@ export async function calculateReadiness(userId, companyId = null, roleTitle = n
     subjectAnalysis,
     nextActions: prioritizedNextActions,
     metrics: {
-      testsCompleted: completedAttempts.length,
+      availableAssessments,
+      submittedAttempts,
+      uniqueAssessmentsCompleted,
+      testsCompleted: submittedAttempts,
       averageTestScore,
       preparationProgress,
       roadmapCompletion: preparationProgress,

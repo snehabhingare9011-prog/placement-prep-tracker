@@ -1,4 +1,5 @@
 import { TestAttempt } from '../models/TestAttempt.js'
+import { Test } from '../models/Test.js'
 import { COMPANY_CURRICULUM } from './curriculumService.js'
 
 // Deterministic keyword matching between test topics/subjects and verified Preparation Hub resources
@@ -40,6 +41,17 @@ export function mapQuestionAreaToHubTopic(topicName, subjectName = '') {
 }
 
 export async function generateMockTestInsights(userId, companyId = null, role = null) {
+  // Available target assessments count
+  const allTests = await Test.find({ isPublished: true }).lean().catch(() => [])
+  const availableTests = allTests.filter(t => {
+    if (!companyId) return true
+    const cId = (t.company?._id || t.company)?.toString()
+    if (cId !== companyId.toString()) return false
+    if (!t.role || !role) return true
+    return t.role.toLowerCase() === role.toLowerCase()
+  })
+  const availableAssessments = availableTests.length
+
   // Query all completed attempts for the user
   const query = { user: userId, status: 'completed' }
 
@@ -54,11 +66,34 @@ export async function generateMockTestInsights(userId, companyId = null, role = 
     .sort({ submittedAt: -1 })
     .lean()
 
-  if (!attempts || attempts.length === 0) {
+  // Filter company and role specific attempts strictly (no fallback across companies)
+  let targetFilteredAttempts = attempts
+  if (companyId) {
+    targetFilteredAttempts = attempts.filter(a => {
+      const aCompId = (a.company?._id || a.company || a.test?.company?._id || a.test?.company)?.toString()
+      if (aCompId !== companyId.toString()) return false
+      const aRole = a.role || a.test?.role
+      if (aRole && role) {
+        return aRole.toLowerCase() === role.toLowerCase()
+      }
+      return true
+    })
+  }
+
+  const analysisAttempts = targetFilteredAttempts
+  const submittedAttempts = analysisAttempts.length
+  const uniqueAssessmentsCompleted = new Set(
+    analysisAttempts.map(a => (a.test?._id || a.test)?.toString()).filter(Boolean)
+  ).size
+
+  if (!analysisAttempts || analysisAttempts.length === 0) {
     return {
       hasEnoughData: false,
       isPreliminary: false,
-      message: 'No completed mock tests yet. Take an assessment to discover your strong areas and topics needing revision.',
+      message: 'No completed mock tests yet for this target. Take an assessment to discover your strong areas and topics needing revision.',
+      availableAssessments,
+      submittedAttempts: 0,
+      uniqueAssessmentsCompleted: 0,
       testsCompleted: 0,
       strongAreas: [],
       areasToImprove: [],
@@ -67,21 +102,8 @@ export async function generateMockTestInsights(userId, companyId = null, role = 
     }
   }
 
-  // Filter company-specific attempts if available
-  let targetFilteredAttempts = attempts
-  if (companyId) {
-    const compMatches = attempts.filter(a => {
-      const aCompId = (a.company?._id || a.company || a.test?.company?._id || a.test?.company)?.toString()
-      return aCompId === companyId.toString()
-    })
-    if (compMatches.length > 0) {
-      targetFilteredAttempts = compMatches
-    }
-  }
-
-  const analysisAttempts = targetFilteredAttempts.length > 0 ? targetFilteredAttempts : attempts
-  const testsCompleted = analysisAttempts.length
-  const isPreliminary = testsCompleted === 1
+  const testsCompleted = submittedAttempts
+  const isPreliminary = submittedAttempts === 1
 
   // Aggregation per subject and topic
   const subjectStats = {}
@@ -273,8 +295,11 @@ export async function generateMockTestInsights(userId, companyId = null, role = 
     isPreliminary,
     confidenceLabel: isPreliminary
       ? 'Preliminary Insights (Based on 1 assessment attempt)'
-      : `Insights based on ${testsCompleted} completed assessments`,
-    testsCompleted,
+      : `Insights based on ${submittedAttempts} completed attempt${submittedAttempts === 1 ? '' : 's'} (${uniqueAssessmentsCompleted} of ${availableAssessments} unique assessment${availableAssessments === 1 ? '' : 's'})`,
+    availableAssessments,
+    submittedAttempts,
+    uniqueAssessmentsCompleted,
+    testsCompleted: submittedAttempts,
     latestAttempt: {
       testTitle: latestAttempt.test?.title || 'Mock Assessment',
       score: latestAttempt.result?.score ?? 0,

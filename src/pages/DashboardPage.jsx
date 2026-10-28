@@ -407,7 +407,7 @@ export function DashboardPage() {
                         {readinessData.metrics.averageTestScore}%
                       </strong>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        ({readinessData.metrics.testsCompleted} test{readinessData.metrics.testsCompleted === 1 ? '' : 's'})
+                        ({readinessData.metrics.submittedAttempts ?? readinessData.metrics.testsCompleted} attempt{(readinessData.metrics.submittedAttempts ?? readinessData.metrics.testsCompleted) === 1 ? '' : 's'} · {readinessData.metrics.uniqueAssessmentsCompleted ?? 0} of {readinessData.metrics.availableAssessments ?? mockTests.length} unique)
                       </span>
                     </div>
                   ) : (
@@ -431,7 +431,7 @@ export function DashboardPage() {
               </div>
               <p style={{ margin: '10px 0 0', fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
                 {readinessData?.metrics?.averageTestScore !== null && readinessData?.metrics?.averageTestScore !== undefined
-                  ? 'Objective average score with negative marking across submitted tests.'
+                  ? 'Objective average score with negative marking across submitted attempts.'
                   : 'Take a target mock assessment to establish your verified exam benchmark.'}
               </p>
             </div>

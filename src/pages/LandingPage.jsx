@@ -22,7 +22,13 @@ import {
   LayoutDashboard,
   Zap,
   HelpCircle,
-  FileText
+  FileText,
+  Code2,
+  Server,
+  Database,
+  Cpu,
+  Activity,
+  Terminal
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import '../saas-landing.css'
@@ -34,6 +40,7 @@ export function LandingPage() {
   const [activeFaq, setActiveFaq] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [legalModal, setLegalModal] = useState(null) // 'privacy' | 'terms' | null
+  const [previewTab, setPreviewTab] = useState('architecture') // 'architecture' | 'workspace'
 
   const isAuthenticated = Boolean(user && token)
 
@@ -309,177 +316,253 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Premium Generic Dashboard Preview Mockup (No company-specific questions) */}
+            {/* Full-Stack Architecture & Platform Engine Showcase */}
             <div className="saas-hero-visual">
               <div className="saas-mockup-frame">
-                {/* Window Bar */}
+                {/* Window Bar with Interactive Tab Switcher */}
                 <div className="saas-mockup-header">
                   <div className="saas-mockup-dots">
                     <span className="dot dot-red" />
                     <span className="dot dot-yellow" />
                     <span className="dot dot-green" />
                   </div>
-                  <div className="saas-mockup-address">
-                    <Lock size={12} />
-                    <span>hireverse.dev/workspace · Preparation Readiness Engine</span>
+
+                  {/* Interactive Architecture / Workspace Tab Switcher */}
+                  <div className="saas-mockup-tabs">
+                    <button
+                      type="button"
+                      className={`saas-mockup-tab-btn ${previewTab === 'architecture' ? 'active' : ''}`}
+                      onClick={() => setPreviewTab('architecture')}
+                    >
+                      <Code2 size={13} />
+                      <span>Code & System Architecture</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`saas-mockup-tab-btn ${previewTab === 'workspace' ? 'active' : ''}`}
+                      onClick={() => setPreviewTab('workspace')}
+                    >
+                      <LayoutDashboard size={13} />
+                      <span>Live Placement Workspace</span>
+                    </button>
                   </div>
+
                   <div className="saas-mockup-tag">
                     <span className="pulse-indicator" />
-                    <span>Live Calibration</span>
+                    <span>REST API v1 · Port 5000</span>
                   </div>
                 </div>
 
-                {/* Dashboard Screen Content */}
-                <div className="saas-mockup-body">
-                  {/* Top Row: Readiness Ring + Performance Breakdown */}
-                  <div className="saas-preview-top-row">
-                    {/* Readiness Index Card */}
-                    <div className="saas-preview-card saas-preview-score-card">
-                      <div className="saas-preview-card-head">
-                        <span className="saas-meta-label">OVERALL READINESS SCORE</span>
-                        <span className="saas-status-badge success">On Track</span>
+                {/* TAB 1: CODE & SYSTEM ARCHITECTURE SHOWCASE */}
+                {previewTab === 'architecture' && (
+                  <div className="saas-arch-container">
+                    <div className="saas-arch-head">
+                      <div>
+                        <span className="saas-arch-eyebrow">FULL-STACK CODEBASE ARCHITECTURE</span>
+                        <h3>Modular Engineering Structure & Data Flow</h3>
                       </div>
-                      <div className="saas-score-display">
-                        <div className="saas-score-number">
-                          <strong>84</strong>
-                          <span className="percent">%</span>
-                        </div>
-                        <div className="saas-score-context">
-                          <b>Strong Placement Benchmark</b>
-                          <small>Calculated from verified curriculum topics, roadmap milestones, and timed assessments.</small>
-                        </div>
-                      </div>
-                      <div className="saas-formula-pill">
-                        Formula: 40% Topics + 40% Mock Tests + 20% Roadmap
+                      <div className="saas-arch-badges">
+                        <span className="saas-code-badge"><Terminal size={11} /> Node.js / Express</span>
+                        <span className="saas-code-badge"><Database size={11} /> MongoDB Atlas</span>
+                        <span className="saas-code-badge"><Cpu size={11} /> Deterministic Scoring</span>
                       </div>
                     </div>
 
-                    {/* Preparation Pillars Card */}
-                    <div className="saas-preview-card saas-preview-pillars-card">
-                      <div className="saas-preview-card-head">
-                        <span className="saas-meta-label">CORE SUBJECT ACCURACY BREAKDOWN</span>
-                        <span className="saas-meta-tag">Real Practice Data</span>
+                    <div className="saas-arch-grid">
+                      {/* Layer 1: Client Application Layer */}
+                      <div className="saas-arch-card">
+                        <div className="saas-arch-card-top">
+                          <div className="saas-arch-icon client">
+                            <Layers size={18} />
+                          </div>
+                          <span className="saas-arch-layer-tag client">Frontend · /src</span>
+                        </div>
+                        <h4>React 18 & Vite SPA Architecture</h4>
+                        <p>Modular client with React Router v6, Context API session state, and responsive glassmorphism UI components.</p>
+                        <div className="saas-arch-chips">
+                          <code>App.jsx</code>
+                          <code>ReadinessPage.jsx</code>
+                          <code>CompanyGuidePage.jsx</code>
+                        </div>
                       </div>
-                      <div className="saas-pillar-bars">
-                        <div className="saas-pillar-row">
-                          <div className="saas-pillar-meta">
-                            <span>Data Structures & Algorithms</span>
-                            <b>88%</b>
+
+                      {/* Layer 2: API Gateway & Security */}
+                      <div className="saas-arch-card">
+                        <div className="saas-arch-card-top">
+                          <div className="saas-arch-icon server">
+                            <Server size={18} />
                           </div>
-                          <div className="saas-progress-track">
-                            <div className="saas-progress-fill" style={{ width: '88%' }} />
+                          <span className="saas-arch-layer-tag server">Backend · /server/src</span>
+                        </div>
+                        <h4>Node.js & Express RESTful Engine</h4>
+                        <p>Protected endpoints with JWT session authentication, bcrypt password hashing, and role-based access control.</p>
+                        <div className="saas-arch-chips">
+                          <code>/api/v1/auth</code>
+                          <code>/api/v1/readiness</code>
+                          <code>/api/v1/mock-tests</code>
+                        </div>
+                      </div>
+
+                      {/* Layer 3: Assessment & Anti-Cheat */}
+                      <div className="saas-arch-card">
+                        <div className="saas-arch-card-top">
+                          <div className="saas-arch-icon engine">
+                            <FileCheck2 size={18} />
+                          </div>
+                          <span className="saas-arch-layer-tag engine">Assessment Engine</span>
+                        </div>
+                        <h4>Server Timers & Negative Marking</h4>
+                        <p>Server-side countdown timer enforcement, automatic expiry, timed negative marking (+4 / -1), and anti-cheat tracking.</p>
+                        <div className="saas-arch-chips">
+                          <code>mockTestService.js</code>
+                          <code>testEvaluator.js</code>
+                          <code>+4 / -1 Marking</code>
+                        </div>
+                      </div>
+
+                      {/* Layer 4: Deterministic Readiness Pipeline */}
+                      <div className="saas-arch-card">
+                        <div className="saas-arch-card-top">
+                          <div className="saas-arch-icon database">
+                            <BarChart3 size={18} />
+                          </div>
+                          <span className="saas-arch-layer-tag database">Analytics Engine</span>
+                        </div>
+                        <h4>Deterministic Readiness Scoring</h4>
+                        <p>Unified task deduplication, separation of syllabus progress and exam accuracy, and Atlas cloud synchronization.</p>
+                        <div className="saas-arch-chips">
+                          <code>readinessService.js</code>
+                          <code>User.js</code>
+                          <code>Company.js</code>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Architecture Telemetry Footer */}
+                    <div className="saas-arch-telemetry">
+                      <div className="saas-telemetry-item">
+                        <span>DATA PIPELINE</span>
+                        <strong>100% Deterministic Evidence</strong>
+                      </div>
+                      <div className="saas-telemetry-item">
+                        <span>DATABASE CLUSTER</span>
+                        <strong>MongoDB Atlas Cloud</strong>
+                      </div>
+                      <div className="saas-telemetry-item">
+                        <span>ASSESSMENT EVALUATION</span>
+                        <strong>Server-Side (+4 / -1 Negative Marking)</strong>
+                      </div>
+                      <div className="saas-telemetry-item">
+                        <span>TEST SUITE STATUS</span>
+                        <strong>15 / 15 Passed (Automated TAP)</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: LIVE PLACEMENT WORKSPACE (Accurate HireVerse Student Experience) */}
+                {previewTab === 'workspace' && (
+                  <div className="saas-mockup-body">
+                    {/* Top Row: Preparation Progress & Mock Diagnostics */}
+                    <div className="saas-preview-top-row">
+                      {/* Section A: Preparation Progress */}
+                      <div className="saas-preview-card">
+                        <div className="saas-preview-card-head">
+                          <span className="saas-meta-label">SECTION A · MY PREPARATION PROGRESS</span>
+                          <span className="saas-status-badge success">44% Syllabus Done</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a' }}>44%</strong>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>(4 of 9 topics completed)</span>
+                        </div>
+                        <div className="saas-progress-track" style={{ height: '7px', marginBottom: '14px' }}>
+                          <div className="saas-progress-fill" style={{ width: '44%' }} />
+                        </div>
+                        <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
+                            NEXT INCOMPLETE TOPIC
+                          </span>
+                          <strong style={{ fontSize: '13px', color: '#0f172a', display: 'block' }}>
+                            Quantitative Aptitude: Time, Work & Percentages
+                          </strong>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>Phase 1 · Programming Foundations · 4 hrs</span>
+                        </div>
+                      </div>
+
+                      {/* Section B: Mock Performance */}
+                      <div className="saas-preview-card">
+                        <div className="saas-preview-card-head">
+                          <span className="saas-meta-label">SECTION B · MY MOCK-TEST PERFORMANCE</span>
+                          <span className="saas-meta-tag">1 Test Submitted</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a' }}>79%</strong>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Average score with negative marking</span>
+                        </div>
+                        <div className="saas-stats-metrics-grid" style={{ marginBottom: '10px' }}>
+                          <div className="saas-stat-box">
+                            <strong>12 Qs</strong>
+                            <span>Attempted</span>
+                          </div>
+                          <div className="saas-stat-box">
+                            <strong style={{ color: '#16a34a' }}>10 Qs</strong>
+                            <span>Correct</span>
+                          </div>
+                          <div className="saas-stat-box">
+                            <strong style={{ color: '#dc2626' }}>2 Qs</strong>
+                            <span>Incorrect</span>
+                          </div>
+                          <div className="saas-stat-box">
+                            <strong style={{ color: '#ea580c' }}>-1 mark</strong>
+                            <span>Penalty</span>
                           </div>
                         </div>
-
-                        <div className="saas-pillar-row">
-                          <div className="saas-pillar-meta">
-                            <span>Core CS (DBMS, OS, Computer Networks)</span>
-                            <b>82%</b>
-                          </div>
-                          <div className="saas-progress-track">
-                            <div className="saas-progress-fill" style={{ width: '82%' }} />
-                          </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 600 }}>Exam Accuracy Across Attempts:</span>
+                          <strong style={{ fontSize: '12px', color: '#16a34a' }}>83%</strong>
                         </div>
+                      </div>
+                    </div>
 
-                        <div className="saas-pillar-row">
-                          <div className="saas-pillar-meta">
-                            <span>Quantitative & Logical Aptitude</span>
-                            <b>90%</b>
-                          </div>
-                          <div className="saas-progress-track">
-                            <div className="saas-progress-fill" style={{ width: '90%' }} />
-                          </div>
+                    {/* Bottom Row: Section C & Section D */}
+                    <div className="saas-preview-bottom-row">
+                      {/* Section C: Evidenced Focus Area */}
+                      <div className="saas-preview-card">
+                        <div className="saas-preview-card-head">
+                          <span className="saas-meta-label">SECTION C · EVIDENCED TOPIC INSIGHTS</span>
+                          <span className="saas-status-badge warning" style={{ background: '#ffedd5', color: '#c2410c', border: '1px solid #fed7aa' }}>1 Focus Area</span>
                         </div>
+                        <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '8px', padding: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <strong style={{ fontSize: '13px', color: '#0f172a' }}>Graph Algorithms: BFS, DFS & Shortest Path</strong>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#c2410c', background: '#ffedd5', padding: '2px 6px', borderRadius: '4px' }}>0% Accuracy</span>
+                          </div>
+                          <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 8px', lineHeight: 1.4 }}>
+                            1 wrong answer out of 1 attempted (-1 mark penalty incurred).
+                          </p>
+                          <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>Revise in Preparation Hub &rarr;</span>
+                        </div>
+                      </div>
 
-                        <div className="saas-pillar-row">
-                          <div className="saas-pillar-meta">
-                            <span>Technical System & Problem Solving</span>
-                            <b>76%</b>
-                          </div>
-                          <div className="saas-progress-track">
-                            <div className="saas-progress-fill" style={{ width: '76%' }} />
-                          </div>
+                      {/* Section D: Prioritized Next Action */}
+                      <div className="saas-preview-card">
+                        <div className="saas-preview-card-head">
+                          <span className="saas-meta-label">SECTION D · RECOMMENDED NEXT STEPS</span>
+                          <span className="saas-phase-label">Priority 1</span>
+                        </div>
+                        <div style={{ borderLeft: '3px solid #2563eb', paddingLeft: '10px' }}>
+                          <strong style={{ fontSize: '13px', color: '#0f172a', display: 'block', marginBottom: '2px' }}>
+                            Complete: Quantitative Aptitude
+                          </strong>
+                          <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 8px', lineHeight: 1.4 }}>
+                            Next incomplete milestone in Phase 1 roadmap. Advance your syllabus coverage.
+                          </p>
+                          <span className="saas-task-badge in-progress">Roadmap Milestone</span>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Bottom Row: Active Milestones + 7-Day Activity */}
-                  <div className="saas-preview-bottom-row">
-                    {/* Roadmap Phase Snippet */}
-                    <div className="saas-preview-card">
-                      <div className="saas-preview-card-head">
-                        <span className="saas-meta-label">ACTIVE ROADMAP MILESTONES</span>
-                        <span className="saas-phase-label">Phase 2 of 4</span>
-                      </div>
-                      <div className="saas-milestone-list">
-                        <div className="saas-milestone-item done">
-                          <div className="saas-milestone-check"><Check size={12} /></div>
-                          <div className="saas-milestone-info">
-                            <strong>Arrays, Two-Pointer & Frequency Maps</strong>
-                            <small>Completed · Linear time complexity mastered</small>
-                          </div>
-                          <span className="saas-task-badge done">Solved</span>
-                        </div>
-
-                        <div className="saas-milestone-item active">
-                          <div className="saas-milestone-check active"><div className="inner-dot" /></div>
-                          <div className="saas-milestone-info">
-                            <strong>Binary Trees, Traversals & BST Logic</strong>
-                            <small>In Progress · 4 of 5 core problems verified</small>
-                          </div>
-                          <span className="saas-task-badge in-progress">Current</span>
-                        </div>
-
-                        <div className="saas-milestone-item upcoming">
-                          <div className="saas-milestone-check" />
-                          <div className="saas-milestone-info">
-                            <strong>Transaction Isolation & Indexing Optimization</strong>
-                            <small>Next Milestone · High-frequency technical topic</small>
-                          </div>
-                          <span className="saas-task-badge upcoming">Next</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Diagnostic Summary & Streak Card */}
-                    <div className="saas-preview-card">
-                      <div className="saas-preview-card-head">
-                        <span className="saas-meta-label">PREPARATION PACE & METRICS</span>
-                        <span className="saas-streak-badge">
-                          <Zap size={12} /> 6-Day Streak
-                        </span>
-                      </div>
-                      <div className="saas-stats-metrics-grid">
-                        <div className="saas-stat-box">
-                          <strong>48</strong>
-                          <span>Questions Solved</span>
-                        </div>
-                        <div className="saas-stat-box">
-                          <strong>4</strong>
-                          <span>Timed Mocks</span>
-                        </div>
-                        <div className="saas-stat-box">
-                          <strong>88%</strong>
-                          <span>Avg Accuracy</span>
-                        </div>
-                        <div className="saas-stat-box">
-                          <strong>Zero</strong>
-                          <span>Guesswork</span>
-                        </div>
-                      </div>
-                      <div className="saas-weekly-streak-chart">
-                        <span className="streak-bar filled"><small>M</small></span>
-                        <span className="streak-bar filled"><small>T</small></span>
-                        <span className="streak-bar filled"><small>W</small></span>
-                        <span className="streak-bar filled"><small>T</small></span>
-                        <span className="streak-bar filled"><small>F</small></span>
-                        <span className="streak-bar filled"><small>S</small></span>
-                        <span className="streak-bar current"><small>S</small></span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

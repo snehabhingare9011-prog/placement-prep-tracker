@@ -105,6 +105,9 @@ export function ReadinessPage() {
     recentTestHistory: []
   }
 
+  const hasSubmittedMockTests = (mockPerformance.testsCompleted || 0) > 0
+  const hasAttemptedQuestions = (mockPerformance.totalAttemptedQuestions || 0) > 0
+
   const subjectAnalysis = readiness?.subjectAnalysis || []
   const strongAreas = readiness?.strengths || []
   const weakAreas = readiness?.weakAreas || []
@@ -439,7 +442,7 @@ export function ReadinessPage() {
       </section>
 
       {/* =========================================================================
-          SECTION C: Strong Areas and Topics to Focus On (Elevated & Tabbed)
+          SECTION C: Strong Areas and Topics to Focus On
           ========================================================================= */}
       <section className="readiness-section-card">
         <div className="readiness-card-header">
@@ -449,291 +452,462 @@ export function ReadinessPage() {
             </span>
             <h2>Strong Areas and Topics to Focus On</h2>
           </div>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>
-            Strictly derived from questions actually answered in submitted tests
-          </span>
+          {hasSubmittedMockTests && (
+            <span style={{ fontSize: '12px', color: '#64748b' }}>
+              Strictly derived from questions actually answered in submitted tests
+            </span>
+          )}
         </div>
 
-        <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.45 }}>
-          Accuracy is only calculated for questions you actually attempted. Unanswered questions are not counted as incorrect subject knowledge.
-        </p>
-
-        {/* Interactive Filter Tabs */}
-        <div className="readiness-tab-bar">
-          <button
-            type="button"
-            className={`readiness-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            <Layers size={13} /> All Subjects Matrix
-          </button>
-          <button
-            type="button"
-            className={`readiness-tab-btn ${activeTab === 'weak' ? 'active' : ''}`}
-            onClick={() => setActiveTab('weak')}
-          >
-            <AlertTriangle size={13} color="#ea580c" /> Focus & Weak Areas ({weakAreas.length})
-          </button>
-          <button
-            type="button"
-            className={`readiness-tab-btn ${activeTab === 'strong' ? 'active' : ''}`}
-            onClick={() => setActiveTab('strong')}
-          >
-            <CheckCircle2 size={13} color="#16a34a" /> Verified Strong Areas ({strongAreas.length})
-          </button>
-        </div>
-
-        {/* TAB 1: ALL SUBJECTS MATRIX */}
-        {activeTab === 'all' && (
-          <div>
+        {/* CASE 1: Student Is Logged In but Has Not Submitted Any Mock Tests */}
+        {!hasSubmittedMockTests ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '48px 24px',
+            background: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            margin: '8px 0 4px'
+          }}>
             <div style={{
-              display: 'flex',
-              gap: '12px',
-              flexWrap: 'wrap',
-              background: '#f8fafc',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              marginBottom: '14px',
-              fontSize: '11px',
-              alignItems: 'center'
+              width: '64px',
+              height: '64px',
+              borderRadius: '16px',
+              background: '#ecfdf5',
+              border: '1px solid #a7f3d0',
+              color: '#059669',
+              display: 'grid',
+              placeItems: 'center',
+              margin: '0 auto 16px',
+              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.08)'
             }}>
-              <span style={{ fontWeight: 700, color: '#334155' }}>Status Criteria:</span>
-              <span><b>Strong:</b> ≥ 3 attempted, ≥ 70% accuracy</span>
-              <span>•</span>
-              <span><b>Needs Focus:</b> ≥ 2 attempted, &lt; 60% accuracy</span>
-              <span>•</span>
-              <span><b>Not Enough Data:</b> &lt; 3 questions attempted</span>
-              <span>•</span>
-              <span><b>Not Attempted:</b> 0 questions attempted</span>
+              <FileCheck2 size={32} />
+            </div>
+            <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
+              Discover Your Strong and Weak Areas
+            </h3>
+            <p style={{ fontSize: '14px', color: '#64748b', maxWidth: '580px', margin: '0 auto 24px', lineHeight: 1.6 }}>
+              Your subject-wise performance will appear here after you complete a mock test. Take an assessment to identify which topics you understand well and which topics need more attention.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <Link to="/mock-tests" className="button primary">
+                <FileCheck2 size={15} /> Take a Mock Test
+              </Link>
+              <Link
+                to={targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep'}
+                className="button secondary"
+              >
+                <BookOpen size={15} /> Explore Preparation Hub
+              </Link>
+            </div>
+          </div>
+        ) : !hasAttemptedQuestions ? (
+          /* CASE 3: Student Has Submitted Tests but No Questions Attempted / Mapped */
+          <div>
+            {/* Performance Summary */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Submitted Mock Tests
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  {mockPerformance.testsCompleted} test{mockPerformance.testsCompleted === 1 ? '' : 's'}
+                </strong>
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Questions Attempted
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  0 Qs
+                </strong>
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Average Test Score
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  {mockPerformance.averageScorePercentage !== null ? `${mockPerformance.averageScorePercentage}%` : '0%'}
+                </strong>
+              </div>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table className="readiness-subject-table">
-                <thead>
-                  <tr>
-                    <th>Subject</th>
-                    <th>Attempted Questions</th>
-                    <th style={{ width: '220px' }}>Exam Accuracy</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Preparation Hub</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subjectAnalysis.length > 0 ? (
-                    subjectAnalysis.map((item, idx) => (
-                      <tr key={idx}>
-                        <td>
-                          <strong style={{ color: '#0f172a', fontSize: '13px', display: 'block' }}>{item.name}</strong>
-                          {item.testedTopics && item.testedTopics.length > 0 && (
-                            <div style={{ marginTop: '4px' }}>
-                              {item.testedTopics.map((tt, i) => (
-                                <span key={i} className="readiness-subtopic-tag">
-                                  {tt.topic} ({tt.correct}/{tt.attempted})
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <span style={{ fontSize: '12px', color: item.attempted > 0 ? '#334155' : '#94a3b8' }}>
-                            {item.attempted > 0
-                              ? `${item.attempted} question${item.attempted === 1 ? '' : 's'} attempted`
-                              : '0 questions attempted'}
-                          </span>
-                        </td>
-                        <td>
-                          {item.attempted > 0 && item.accuracy !== null ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <ProgressBar
-                                value={item.accuracy}
-                                tone={item.accuracy >= 70 ? 'green' : (item.accuracy < 60 ? 'orange' : 'blue')}
-                                showValue={false}
-                                height={6}
-                              />
-                              <span style={{ fontSize: '12px', fontWeight: 700, minWidth: '35px', textAlign: 'right' }}>
-                                {item.accuracy}%
+            <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <Clock size={36} color="#6366f1" style={{ margin: '0 auto 12px' }} />
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+                Subject-Wise Insights Pending
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#64748b', maxWidth: '560px', margin: '0 auto 20px', lineHeight: 1.55 }}>
+                You have submitted {mockPerformance.testsCompleted} mock test{mockPerformance.testsCompleted === 1 ? '' : 's'}, but no questions were attempted or mapped to technical subjects. Detailed strong and weak area diagnostics will appear once you answer questions in an assessment.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <Link to="/mock-tests" className="button primary">
+                  <FileCheck2 size={15} /> Take a Mock Test
+                </Link>
+                <Link
+                  to={targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep'}
+                  className="button secondary"
+                >
+                  <BookOpen size={15} /> Explore Preparation Hub
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* CASE 2: Student Has Submitted Mock Tests with Questions Attempted */
+          <div>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px', lineHeight: 1.45 }}>
+              Accuracy is only calculated for questions you actually attempted. Unanswered questions are not counted as incorrect subject knowledge.
+            </p>
+
+            {/* 1. Performance Summary Strip */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Submitted Mock Tests
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  {mockPerformance.testsCompleted} test{mockPerformance.testsCompleted === 1 ? '' : 's'}
+                </strong>
+              </div>
+
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Questions Attempted
+                </span>
+                <strong style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  {mockPerformance.totalAttemptedQuestions} Qs
+                </strong>
+              </div>
+
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                  Exam Accuracy
+                </span>
+                <strong style={{
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  color: (mockPerformance.examAccuracyPercentage || 0) >= 60 ? '#16a34a' : '#ea580c'
+                }}>
+                  {mockPerformance.examAccuracyPercentage !== null ? `${mockPerformance.examAccuracyPercentage}%` : 'Pending'}
+                </strong>
+              </div>
+
+              {mockPerformance.negativeMarksLost > 0 && (
+                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '14px 16px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                    Penalty Incurred
+                  </span>
+                  <strong style={{ fontSize: '20px', fontWeight: 800, color: '#c2410c' }}>
+                    -{mockPerformance.negativeMarksLost} marks
+                  </strong>
+                </div>
+              )}
+            </div>
+
+            {/* Interactive Filter Tabs */}
+            <div className="readiness-tab-bar">
+              <button
+                type="button"
+                className={`readiness-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveTab('all')}
+              >
+                <Layers size={13} /> All Subjects Matrix
+              </button>
+              <button
+                type="button"
+                className={`readiness-tab-btn ${activeTab === 'weak' ? 'active' : ''}`}
+                onClick={() => setActiveTab('weak')}
+              >
+                <AlertTriangle size={13} color="#ea580c" /> Topics to Focus On ({weakAreas.length})
+              </button>
+              <button
+                type="button"
+                className={`readiness-tab-btn ${activeTab === 'strong' ? 'active' : ''}`}
+                onClick={() => setActiveTab('strong')}
+              >
+                <CheckCircle2 size={13} color="#16a34a" /> Strong Areas ({strongAreas.length})
+              </button>
+            </div>
+
+            {/* TAB 1: ALL SUBJECTS MATRIX */}
+            {activeTab === 'all' && (
+              <div>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  background: '#f8fafc',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  marginBottom: '14px',
+                  fontSize: '11px',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontWeight: 700, color: '#334155' }}>Status Criteria:</span>
+                  <span><b>Strong:</b> ≥ 3 attempted, ≥ 70% accuracy</span>
+                  <span>•</span>
+                  <span><b>Needs Focus:</b> ≥ 2 attempted, &lt; 60% accuracy</span>
+                  <span>•</span>
+                  <span><b>Not Enough Data:</b> &lt; 3 questions attempted</span>
+                  <span>•</span>
+                  <span><b>Not Attempted:</b> 0 questions attempted</span>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="readiness-subject-table">
+                    <thead>
+                      <tr>
+                        <th>Subject</th>
+                        <th>Attempted Questions</th>
+                        <th style={{ width: '220px' }}>Exam Accuracy</th>
+                        <th>Status</th>
+                        <th style={{ textAlign: 'right' }}>Preparation Hub</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subjectAnalysis.length > 0 ? (
+                        subjectAnalysis.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>
+                              <strong style={{ color: '#0f172a', fontSize: '13px', display: 'block' }}>{item.name}</strong>
+                              {item.testedTopics && item.testedTopics.length > 0 && (
+                                <div style={{ marginTop: '4px' }}>
+                                  {item.testedTopics.map((tt, i) => (
+                                    <span key={i} className="readiness-subtopic-tag">
+                                      {tt.topic} ({tt.correct}/{tt.attempted})
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '12px', color: item.attempted > 0 ? '#334155' : '#94a3b8' }}>
+                                {item.attempted > 0
+                                  ? `${item.attempted} question${item.attempted === 1 ? '' : 's'} attempted`
+                                  : '0 questions attempted'}
                               </span>
+                            </td>
+                            <td>
+                              {item.attempted > 0 && item.accuracy !== null ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <ProgressBar
+                                    value={item.accuracy}
+                                    tone={item.accuracy >= 70 ? 'green' : (item.accuracy < 60 ? 'orange' : 'blue')}
+                                    showValue={false}
+                                    height={6}
+                                  />
+                                  <span style={{ fontSize: '12px', fontWeight: 700, minWidth: '35px', textAlign: 'right' }}>
+                                    {item.accuracy}%
+                                  </span>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                  Untested
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {getStatusBadge(item.status)}
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <Link
+                                to={
+                                  item.hubTopicId && targetCompanyId
+                                    ? `/company-prep?company=${targetCompanyId}&topic=${item.hubTopicId}`
+                                    : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
+                                }
+                                className="button secondary"
+                                style={{ fontSize: '11px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <span>Study in Hub</span>
+                                <ChevronRight size={12} />
+                              </Link>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                            No subject records available.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: TOPICS TO FOCUS ON */}
+            {activeTab === 'weak' && (
+              <div>
+                {weakAreas.length > 0 ? (
+                  <div className="readiness-weak-grid">
+                    {weakAreas.map((weak, idx) => (
+                      <div key={idx} className="readiness-insight-box is-weak">
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {weak.category}: {weak.subject}
+                              </span>
+                              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
+                                {weak.name}
+                              </h3>
                             </div>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                              Untested
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#c2410c',
+                              background: '#ffedd5',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              flexShrink: 0
+                            }}>
+                              {weak.priority || 'Action Needed'}
                             </span>
-                          )}
-                        </td>
-                        <td>
-                          {getStatusBadge(item.status)}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '6px 0 8px' }}>
+                            <b style={{ fontSize: '24px', fontWeight: 800, color: '#c2410c' }}>{weak.accuracy}%</b>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              Accuracy · {weak.attempted} question{weak.attempted === 1 ? '' : 's'} attempted
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#b45309', background: '#fef3c7', padding: '6px 10px', borderRadius: '6px', margin: '0 0 10px' }}>
+                            <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+                            <span>
+                              Low accuracy across {weak.attempted} attempted question{weak.attempted === 1 ? '' : 's'}{weak.marksLost ? ` (-${weak.marksLost} marks penalty)` : ''}.
+                            </span>
+                          </div>
+
+                          <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px', lineHeight: 1.45 }}>
+                            {weak.description}
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>
+                            Est. Study: <b>{weak.estimatedHours || '2 hrs'}</b>
+                          </span>
                           <Link
                             to={
-                              item.hubTopicId && targetCompanyId
-                                ? `/company-prep?company=${targetCompanyId}&topic=${item.hubTopicId}`
+                              weak.hubTopicId && targetCompanyId
+                                ? `/company-prep?company=${targetCompanyId}&topic=${weak.hubTopicId}`
+                                : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
+                            }
+                            className="button primary"
+                            style={{ fontSize: '11px', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <span>Study in Preparation Hub</span>
+                            <ArrowRight size={12} />
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <CheckCircle2 size={32} color="#16a34a" style={{ margin: '0 auto 8px' }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
+                      No Critical Weak Areas Detected
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                      You have not recorded significant mistakes or low-accuracy topics in your submitted assessments.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: STRONG AREAS */}
+            {activeTab === 'strong' && (
+              <div>
+                {strongAreas.length > 0 ? (
+                  <div className="readiness-strong-grid">
+                    {strongAreas.map((strong, idx) => (
+                      <div key={idx} className="readiness-insight-box is-strong">
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {strong.category}: {strong.subject}
+                              </span>
+                              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
+                                {strong.name}
+                              </h3>
+                            </div>
+                            <span className="status-pill status-strong" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '2px 8px' }}>
+                              <CheckCircle2 size={12} /> Strong
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '6px 0 8px' }}>
+                            <b style={{ fontSize: '26px', fontWeight: 800, color: '#16a34a' }}>{strong.accuracy}%</b>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              Accuracy · {strong.total || strong.attempted} questions attempted ({strong.correct} correct)
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#15803d', margin: '0 0 10px' }}>
+                            <Check size={13} color="#16a34a" />
+                            <span>{strong.note || `${strong.correct} of ${strong.total} questions answered correctly`}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                          <Link
+                            to={
+                              strong.hubTopicId && targetCompanyId
+                                ? `/company-prep?company=${targetCompanyId}&topic=${strong.hubTopicId}`
                                 : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
                             }
                             className="button secondary"
-                            style={{ fontSize: '11px', padding: '4px 10px' }}
+                            style={{ fontSize: '11px', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                           >
-                            Study <ChevronRight size={12} />
+                            <span>Study in Preparation Hub</span>
+                            <ChevronRight size={12} />
                           </Link>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-                        No subject records available.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: DEDICATED WEAK AREAS */}
-        {activeTab === 'weak' && (
-          <div>
-            {weakAreas.length > 0 ? (
-              <div className="readiness-weak-grid">
-                {weakAreas.map((weak, idx) => (
-                  <div key={idx} className="readiness-insight-box is-weak">
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <div>
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            {weak.category}: {weak.subject}
-                          </span>
-                          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
-                            {weak.name}
-                          </h3>
                         </div>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#c2410c',
-                          background: '#ffedd5',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          flexShrink: 0
-                        }}>
-                          {weak.priority || 'Action Needed'}
-                        </span>
                       </div>
-
-                      <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px', lineHeight: 1.45 }}>
-                        {weak.description}
-                      </p>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#b45309', background: '#fef3c7', padding: '6px 10px', borderRadius: '6px' }}>
-                        <AlertTriangle size={13} style={{ flexShrink: 0 }} />
-                        <span>{weak.note}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>
-                        Est. Study: <b>{weak.estimatedHours || '2 hrs'}</b>
-                      </span>
-                      <Link
-                        to={
-                          weak.hubTopicId && targetCompanyId
-                            ? `/company-prep?company=${targetCompanyId}&topic=${weak.hubTopicId}`
-                            : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
-                        }
-                        className="button primary"
-                        style={{ fontSize: '11px', padding: '5px 12px' }}
-                      >
-                        Revise in Hub <ArrowRight size={12} />
-                      </Link>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <CheckCircle2 size={32} color="#16a34a" style={{ margin: '0 auto 8px' }} />
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
-                  No Critical Weak Areas Detected!
-                </h3>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-                  You have not recorded significant mistakes or low-accuracy topics in your submitted assessments.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: DEDICATED STRONG AREAS */}
-        {activeTab === 'strong' && (
-          <div>
-            {strongAreas.length > 0 ? (
-              <div className="readiness-strong-grid">
-                {strongAreas.map((strong, idx) => (
-                  <div key={idx} className="readiness-insight-box is-strong">
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <div>
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            {strong.category}: {strong.subject}
-                          </span>
-                          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
-                            {strong.name}
-                          </h3>
-                        </div>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#15803d',
-                          background: '#dcfce7',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          flexShrink: 0
-                        }}>
-                          {strong.badgeText || 'Strong Area'}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '6px 0 8px' }}>
-                        <b style={{ fontSize: '26px', fontWeight: 800, color: '#16a34a' }}>{strong.accuracy}%</b>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>Accuracy</span>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#15803d' }}>
-                        <Check size={13} color="#16a34a" />
-                        <span>{strong.note}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <Clock size={32} color="#6366f1" style={{ margin: '0 auto 8px' }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
+                      No High-Confidence Strong Areas Yet
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>
+                      Complete more mock assessment questions with &ge; 70% accuracy (minimum 3 attempted questions) to verify your strong areas.
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <Link to="/mock-tests" className="button primary" style={{ fontSize: '12px' }}>
+                        <FileCheck2 size={13} /> Take a Mock Test
+                      </Link>
                       <Link
-                        to={
-                          strong.hubTopicId && targetCompanyId
-                            ? `/company-prep?company=${targetCompanyId}&topic=${strong.hubTopicId}`
-                            : (targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep')
-                        }
+                        to={targetCompanyId ? `/company-prep?company=${targetCompanyId}` : '/company-prep'}
                         className="button secondary"
-                        style={{ fontSize: '11px', padding: '5px 12px' }}
+                        style={{ fontSize: '12px' }}
                       >
-                        Review Notes <ChevronRight size={12} />
+                        <BookOpen size={13} /> Explore Preparation Hub
                       </Link>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <Clock size={32} color="#6366f1" style={{ margin: '0 auto 8px' }} />
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
-                  No High-Confidence Strong Areas Yet
-                </h3>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px' }}>
-                  Complete more mock assessment questions with &ge; 70% accuracy to establish verified strengths.
-                </p>
-                <Link to="/mock-tests" className="button primary" style={{ fontSize: '12px', display: 'inline-flex' }}>
-                  <FileCheck2 size={13} /> Take Mock Test
-                </Link>
+                )}
               </div>
             )}
           </div>

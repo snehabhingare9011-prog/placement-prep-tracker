@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
+import PublicNavbar from '../components/layout/PublicNavbar'
 import api from '../api/client'
 
 export function OnboardingPage() {
@@ -25,23 +26,17 @@ export function OnboardingPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // Redirect if user already has a target company set
-  useEffect(() => {
-    if (user && user.targetCompany && (user.targetCompany._id || typeof user.targetCompany === 'string')) {
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, navigate])
-
-  // Load companies
+  // Load companies and pre-select current target if set, or default to first company
   useEffect(() => {
     async function fetchCompanies() {
       try {
         const res = await api.companies.getAll()
         if (res.success && res.companies && res.companies.length > 0) {
           setCompanies(res.companies)
-          const firstCo = res.companies[0]
-          setSelectedCompanyId(firstCo._id)
-          setSelectedRole(firstCo.roles?.[0] || 'Software Engineer')
+          const currentTargetId = user?.targetCompany?._id || user?.targetCompany
+          const initialCo = (currentTargetId && res.companies.find(c => c._id === currentTargetId)) || res.companies[0]
+          setSelectedCompanyId(initialCo._id)
+          setSelectedRole(user?.targetRole || initialCo.roles?.[0] || 'Software Engineer')
         }
       } catch (err) {
         console.error('Failed to load companies for onboarding:', err)
@@ -51,7 +46,7 @@ export function OnboardingPage() {
       }
     }
     fetchCompanies()
-  }, [])
+  }, [user])
 
   const selectedCompany = companies.find(c => c._id === selectedCompanyId) || companies[0]
 
@@ -85,27 +80,12 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="onboarding-container" style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(180deg, #f8fafc 0%, #f0f7ff 100%)',
-      padding: '40px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'Inter, sans-serif'
-    }}>
-      <div style={{
-        maxWidth: '720px',
-        width: '100%',
-        background: '#ffffff',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04)',
-        padding: '36px 32px'
-      }}>
+    <div className="onboarding-page-wrapper">
+      <PublicNavbar />
+      <main className="onboarding-main-container">
+        <div className="onboarding-card">
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -118,12 +98,12 @@ export function OnboardingPage() {
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
-            marginBottom: '12px'
+            marginBottom: '10px'
           }}>
             <Sparkles size={14} /> Personalize Your Preparation
           </div>
           <h1 style={{
-            fontSize: '26px',
+            fontSize: '24px',
             fontWeight: 800,
             color: '#0f172a',
             margin: '0 0 8px',
@@ -132,7 +112,7 @@ export function OnboardingPage() {
             Select Your Target Company & Role
           </h1>
           <p style={{
-            fontSize: '14px',
+            fontSize: '13.5px',
             color: '#64748b',
             margin: 0,
             lineHeight: 1.5
@@ -319,7 +299,8 @@ export function OnboardingPage() {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

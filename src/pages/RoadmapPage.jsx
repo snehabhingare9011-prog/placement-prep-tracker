@@ -6,7 +6,6 @@ import {
   Circle,
   Clock,
   Sparkles,
-  RotateCcw,
   ArrowRight,
   BookOpen,
   Check,
@@ -41,19 +40,10 @@ export function RoadmapPage() {
 
   const [roadmap, setRoadmap] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [filterMode, setFilterMode] = useState('all') // 'all' | 'pending' | 'completed'
   const [collapsedRounds, setCollapsedRounds] = useState({})
   const [curriculumTopics, setCurriculumTopics] = useState([])
   const [selectedResourceTopic, setSelectedResourceTopic] = useState(null)
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
-
-  // Timeline configuration modal
-  const [regenModalOpen, setRegenModalOpen] = useState(false)
-  const [companies, setCompanies] = useState([])
-  const [selectedCompanyId, setSelectedCompanyId] = useState('')
-  const [selectedRole, setSelectedRole] = useState('')
-  const [availableWeeks, setAvailableWeeks] = useState(8)
-  const [regenerating, setRegenerating] = useState(false)
 
   const targetCompanyId = user?.targetCompany?._id || user?.targetCompany
   const targetRole = user?.currentTargetRole || 'Software Engineer'
@@ -78,17 +68,14 @@ export function RoadmapPage() {
     async function loadRoadmapAndTopics() {
       setLoading(true)
       try {
-        const [roadmapRes, companiesRes, topicsRes] = await Promise.all([
+        const [roadmapRes, topicsRes] = await Promise.all([
           api.roadmaps.get({ companyId: targetCompanyId, role: targetRole }).catch(() => ({ success: false })),
-          api.companies.getAll().catch(() => ({ success: false })),
           api.curriculum.getAllTopics().catch(() => ({ success: false }))
         ])
 
         if (roadmapRes.success && roadmapRes.roadmap) {
           const loadedRoadmap = roadmapRes.roadmap
           setRoadmap(loadedRoadmap)
-          setSelectedCompanyId(loadedRoadmap.company?._id || targetCompanyId || '')
-          setSelectedRole(loadedRoadmap.role || targetRole || '')
 
           // Automatically expand active stage, keep completed or locked stages collapsed
           const phases = loadedRoadmap.phases || []
@@ -111,10 +98,6 @@ export function RoadmapPage() {
           setCollapsedRounds(initialCollapsed)
         } else {
           setRoadmap(null)
-        }
-
-        if (companiesRes.success && companiesRes.companies) {
-          setCompanies(companiesRes.companies)
         }
 
         if (topicsRes.success && topicsRes.topics) {
@@ -250,23 +233,6 @@ export function RoadmapPage() {
       showToast(err.message || 'Failed to update topic status', 'danger')
     } finally {
       setUpdatingTaskId(null)
-    }
-  }
-
-  const handleRegenerateRoadmap = async () => {
-    if (!selectedCompanyId) return
-    setRegenerating(true)
-    try {
-      const res = await api.roadmaps.generate(selectedCompanyId, selectedRole, availableWeeks)
-      if (res.success && res.roadmap) {
-        setRoadmap(res.roadmap)
-        showToast('Personalized preparation roadmap generated.', 'success')
-        setRegenModalOpen(false)
-      }
-    } catch (err) {
-      showToast(err.message || 'Failed to regenerate roadmap', 'danger')
-    } finally {
-      setRegenerating(false)
     }
   }
 
@@ -462,14 +428,6 @@ export function RoadmapPage() {
         <Link to="/mock-tests" className="button secondary">
           <FileCheck2 size={15} /> Mock Tests
         </Link>
-        <button
-          type="button"
-          className="button secondary"
-          onClick={() => setRegenModalOpen(true)}
-          title="Adjust preparation duration"
-        >
-          <RotateCcw size={15} /> Configure Timeline
-        </button>
       </PageHeader>
 
       {/* 2. Compact Overall Preparation Summary based on real saved completion data */}
@@ -599,50 +557,30 @@ export function RoadmapPage() {
         </section>
       )}
 
-      {/* Filter and Expand/Collapse Controls Bar */}
+      {/* Metric Counts and Expand/Collapse Controls Bar */}
       <div className="journey-controls-bar">
         <div className="journey-filter-tabs">
-          <button
-            type="button"
-            className={`filter-tab ${filterMode === 'all' ? 'active' : ''}`}
-            onClick={() => setFilterMode('all')}
-          >
-            All Topics ({totalUniqueTopics})
-          </button>
-          <button
-            type="button"
-            className={`filter-tab ${filterMode === 'pending' ? 'active' : ''}`}
-            onClick={() => setFilterMode('pending')}
-          >
-            Remaining ({totalUniqueTopics - completedUniqueTopics})
-          </button>
-          <button
-            type="button"
-            className={`filter-tab ${filterMode === 'completed' ? 'active' : ''}`}
-            onClick={() => setFilterMode('completed')}
-          >
-            Completed ({completedUniqueTopics})
-          </button>
+          <div className="filter-tab journey-stat-pill total">
+            <span>All Topics</span>
+            <span className="filter-tab-count journey-stat-pill-count">{totalUniqueTopics}</span>
+          </div>
+          <div className="filter-tab journey-stat-pill remaining">
+            <span>Remaining</span>
+            <span className="filter-tab-count journey-stat-pill-count">{totalUniqueTopics - completedUniqueTopics}</span>
+          </div>
+          <div className="filter-tab journey-stat-pill completed">
+            <span>Completed</span>
+            <span className="filter-tab-count journey-stat-pill-count">{completedUniqueTopics}</span>
+          </div>
         </div>
 
         <button
           type="button"
+          className="journey-expand-btn"
           onClick={handleToggleExpandAll}
-          style={{
-            background: 'transparent',
-            border: '1px solid #e2e8f0',
-            borderRadius: '6px',
-            padding: '4px 10px',
-            fontSize: '11px',
-            color: '#475569',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}
         >
-          <Layers size={13} />
-          {roadmap.phases.every((_, idx) => collapsedRounds[idx]) ? 'Expand All Stages' : 'Collapse All Stages'}
+          <Layers size={14} />
+          <span>{roadmap.phases.every((_, idx) => collapsedRounds[idx]) ? 'Expand All Stages' : 'Collapse All Stages'}</span>
         </button>
       </div>
 
@@ -651,12 +589,7 @@ export function RoadmapPage() {
         {roadmap.phases.map((phase, pIdx) => {
           const isCollapsed = !!collapsedRounds[pIdx]
           const phaseTasks = phase.tasks || []
-
-          const filteredTasks = phaseTasks.filter(t => {
-            if (filterMode === 'pending') return !t.completed
-            if (filterMode === 'completed') return t.completed
-            return true
-          })
+          const filteredTasks = phaseTasks
 
           const doneInPhase = phaseTasks.filter(t => t.completed).length
           const totalInPhase = phaseTasks.length
@@ -934,7 +867,7 @@ export function RoadmapPage() {
 
                     {filteredTasks.length === 0 && (
                       <p style={{ margin: 0, padding: '16px 0', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-                        No topics matching the current filter in this interview round.
+                        No topics listed for this interview round.
                       </p>
                     )}
                   </div>
@@ -1116,73 +1049,6 @@ export function RoadmapPage() {
                 Close
               </button>
             </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Regeneration Modal */}
-      {regenModalOpen && (
-        <Modal
-          title="Configure Preparation Roadmap"
-          close={() => setRegenModalOpen(false)}
-        >
-          <p className="modal-copy">
-            HireVerse organizes interview stages and learning tasks based on verified rounds for {company.name} and your target weeks before campus placement.
-          </p>
-
-          <div className="modal-form-fields" style={{ display: 'grid', gap: '14px', margin: '16px 0' }}>
-            <label className="field-label" style={{ display: 'grid', gap: '6px', fontSize: '12px' }}>
-              <span>Target Company</span>
-              <select
-                value={selectedCompanyId}
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                style={{ height: '36px', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0 8px' }}
-              >
-                {companies.map(c => (
-                  <option key={c._id} value={c._id}>{c.name} ({c.difficulty})</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="field-label" style={{ display: 'grid', gap: '6px', fontSize: '12px' }}>
-              <span>Target Job Role</span>
-              <input
-                type="text"
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                placeholder="e.g. Software Engineer"
-                style={{ height: '36px', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0 8px' }}
-              />
-            </label>
-
-            <label className="field-label" style={{ display: 'grid', gap: '6px', fontSize: '12px' }}>
-              <span>Available Preparation Weeks ({availableWeeks} weeks)</span>
-              <input
-                type="range"
-                min="4"
-                max="16"
-                value={availableWeeks}
-                onChange={(e) => setAvailableWeeks(Number(e.target.value))}
-              />
-            </label>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => setRegenModalOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="button"
-              onClick={handleRegenerateRoadmap}
-              disabled={regenerating}
-            >
-              {regenerating ? 'Regenerating...' : 'Regenerate Roadmap'}
-            </button>
           </div>
         </Modal>
       )}

@@ -4,6 +4,7 @@ import {
   updateProfile,
   updatePassword,
   setTargetGoal,
+  deleteAccount,
   getStudents,
   getStudentById
 } from '../controllers/userController.js'
@@ -17,6 +18,7 @@ router.get('/me', authenticate, getProfile)
 router.patch('/me', authenticate, updateProfile)
 router.patch('/me/password', authenticate, updatePassword)
 router.patch('/me/target', authenticate, setTargetGoal)
+router.delete('/me', authenticate, deleteAccount)
 
 // Staff & Placement Officer & Admin routes to manage students
 router.get('/students', authenticate, authorize('admin', 'faculty', 'placement_officer'), getStudents)

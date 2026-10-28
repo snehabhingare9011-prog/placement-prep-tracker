@@ -136,4 +136,66 @@ describe('Company Preparation Journey, Roadmap & Mock-Test Insights', () => {
     assert.strictEqual(progressRes.status, 200)
     assert.strictEqual(progressRes.body.completedTopics.includes(topicId), false)
   })
+
+  test('Roadmap: enforces sequential round unlocking on topic completion and rejects updates in locked stages', async () => {
+    // 1. Get roadmap
+    const roadmapRes = await request
+      .get('/api/v1/roadmaps')
+      .set('Authorization', `Bearer ${studentToken}`)
+    assert.strictEqual(roadmapRes.status, 200)
+    assert.ok(roadmapRes.body.roadmap)
+
+    const roadmap = roadmapRes.body.roadmap
+    const roadmapId = roadmap._id
+    assert.ok(roadmap.phases.length >= 2, 'Roadmap has at least 2 phases')
+
+    const round2Task = roadmap.phases[1].tasks[0]
+    assert.ok(round2Task, 'Phase 2 has a task')
+
+    // Ensure Round 1 is not fully completed
+    const round1Incomplete = roadmap.phases[0].tasks.find(t => !t.completed)
+    if (!round1Incomplete) {
+      await request
+        .patch(`/api/v1/roadmaps/${roadmapId}/tasks/${roadmap.phases[0].tasks[0].taskId}`)
+        .set('Authorization', `Bearer ${studentToken}`)
+    }
+
+    // Attempting to toggle a task in Round 2 while Round 1 is incomplete MUST return 400
+    const lockedToggleRes = await request
+      .patch(`/api/v1/roadmaps/${roadmapId}/tasks/${round2Task.taskId}`)
+      .set('Authorization', `Bearer ${studentToken}`)
+    assert.strictEqual(lockedToggleRes.status, 400)
+    assert.strictEqual(lockedToggleRes.body.success, false)
+    assert.ok(lockedToggleRes.body.message.includes('locked'))
+
+    // Complete all tasks in Round 1
+    for (const task of roadmap.phases[0].tasks) {
+      const getLatest = await request
+        .get('/api/v1/roadmaps')
+        .set('Authorization', `Bearer ${studentToken}`)
+      const currentTask = getLatest.body.roadmap.phases[0].tasks.find(t => t.taskId === task.taskId)
+      if (!currentTask.completed) {
+        const checkRes = await request
+          .patch(`/api/v1/roadmaps/${roadmapId}/tasks/${task.taskId}`)
+          .set('Authorization', `Bearer ${studentToken}`)
+        assert.strictEqual(checkRes.status, 200)
+      }
+    }
+
+    // Now Round 2 is UNLOCKED! Toggling task in Round 2 should succeed
+    const prevCompleted = !!round2Task.completed
+    const unlockedToggleRes = await request
+      .patch(`/api/v1/roadmaps/${roadmapId}/tasks/${round2Task.taskId}`)
+      .set('Authorization', `Bearer ${studentToken}`)
+    assert.strictEqual(unlockedToggleRes.status, 200)
+    assert.strictEqual(unlockedToggleRes.body.success, true)
+    assert.strictEqual(unlockedToggleRes.body.isCompleted, !prevCompleted)
+
+    // Toggle it back so state is restored
+    const cleanupRes = await request
+      .patch(`/api/v1/roadmaps/${roadmapId}/tasks/${round2Task.taskId}`)
+      .set('Authorization', `Bearer ${studentToken}`)
+    assert.strictEqual(cleanupRes.status, 200)
+    assert.strictEqual(cleanupRes.body.isCompleted, prevCompleted)
+  })
 })

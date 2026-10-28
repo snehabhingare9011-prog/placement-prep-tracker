@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  BookOpen,
+  Sparkles
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CompanyMark from '../components/common/CompanyMark'
@@ -85,34 +87,40 @@ export function CompanyGuidePage() {
         </div>
 
         <div className="guide-score-card">
-          <span>Your Company Readiness</span>
-          <b>{userProgress?.hasEnoughData ? `${userProgress.overallScore}%` : 'New'}</b>
+          <div className="guide-score-header">
+            <span>Your Company Readiness</span>
+            <b className={userProgress?.hasEnoughData ? '' : 'is-new'}>
+              {userProgress?.hasEnoughData ? `${userProgress.overallScore}%` : 'New'}
+            </b>
+          </div>
           <ProgressBar
             value={userProgress?.overallScore || 0}
             tone="blue"
             showValue={false}
           />
-          <small>{userProgress?.statusLabel || 'Complete curriculum topics to calculate readiness'}</small>
+          <span className="guide-score-note">
+            {userProgress?.statusLabel || 'Complete curriculum topics to calculate readiness'}
+          </span>
 
           {!isCurrentTarget ? (
             <button
               type="button"
               className="button"
-              style={{ marginTop: '14px', width: '100%', justifyContent: 'center' }}
+              style={{ marginTop: '4px', width: '100%', justifyContent: 'center' }}
               onClick={handleMakeTarget}
             >
               Set as Current Target Goal
             </button>
           ) : (
-            <span className="targeted-indicator">
+            <div className="targeted-indicator">
               <CheckCircle2 size={15} /> Active Target
-            </span>
+            </div>
           )}
 
           <Link
             to={`/company-prep?company=${company._id}`}
             className="button secondary"
-            style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}
+            style={{ width: '100%', justifyContent: 'center' }}
           >
             <span>Preparation Hub</span>
             <ArrowRight size={13} />
@@ -160,12 +168,23 @@ export function CompanyGuidePage() {
             </article>
 
             <article className="guide-section">
-              <h2>Frequently Tested Subjects</h2>
+              <div className="guide-section-header">
+                <h2>Frequently Tested Subjects</h2>
+                <p>Core evaluation areas and syllabus domains prioritized in {company.name} assessments.</p>
+              </div>
+
               <div className="tested-subjects-list">
                 {company.frequentlyTestedSubjects?.map(subj => (
                   <div key={subj} className="tested-subject-pill">
-                    <strong>{subj}</strong>
-                    <span>High Weightage</span>
+                    <div className="tested-subject-left">
+                      <span className="tested-subject-icon">
+                        <BookOpen size={16} />
+                      </span>
+                      <strong className="tested-subject-title">{subj}</strong>
+                    </div>
+                    <span className="tested-subject-badge">
+                      <Sparkles size={12} /> High Weightage
+                    </span>
                   </div>
                 ))}
               </div>
@@ -193,22 +212,26 @@ export function CompanyGuidePage() {
         </section>
       )}
 
-      {/* Tab 4: Eligibility & Campus Drives */}
+      {/* Tab 2: Eligibility & Campus Drives */}
       {activeTab === 'eligibility' && (
         <section className="guide-section">
-          <h2>Eligibility Criteria & Campus Drives</h2>
+          <div className="guide-section-header">
+            <h2>Eligibility Criteria & Campus Drives</h2>
+            <p>Placement academic cutoffs, eligible engineering branches, and recruitment eligibility standards.</p>
+          </div>
+
           <div className="eligibility-box">
             <div className="eligibility-item">
-              <span>Minimum CGPA Required</span>
-              <strong>{company.eligibilityCriteria?.minCgpa || 7.0} / 10.0</strong>
+              <span className="eligibility-label">Minimum CGPA Required</span>
+              <strong className="eligibility-value">{company.eligibilityCriteria?.minCgpa || 7.0} / 10.0</strong>
             </div>
             <div className="eligibility-item">
-              <span>Eligible Branches</span>
-              <strong>{company.eligibilityCriteria?.allowedBranches?.join(', ') || 'All Engineering Branches'}</strong>
+              <span className="eligibility-label">Eligible Branches</span>
+              <strong className="eligibility-value">{company.eligibilityCriteria?.allowedBranches?.join(', ') || 'All Engineering Branches'}</strong>
             </div>
             <div className="eligibility-item">
-              <span>Graduation Batches</span>
-              <strong>{company.eligibilityCriteria?.graduationYears?.join(', ') || '2026, 2027'}</strong>
+              <span className="eligibility-label">Graduation Batches</span>
+              <strong className="eligibility-value">{company.eligibilityCriteria?.graduationYears?.join(', ') || '2026, 2027'}</strong>
             </div>
           </div>
 

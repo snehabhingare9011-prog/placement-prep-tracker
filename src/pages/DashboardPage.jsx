@@ -6,7 +6,6 @@ import {
   Target,
   ArrowRight,
   CheckCircle2,
-  Circle,
   Clock,
   Building2,
   ChevronRight,
@@ -44,7 +43,6 @@ export function DashboardPage() {
   const [selectedResourceTopic, setSelectedResourceTopic] = useState(null)
   const [selectedTestForStart, setSelectedTestForStart] = useState(null)
   const [starting, setStarting] = useState(false)
-  const [updatingTopicId, setUpdatingTopicId] = useState(null)
 
   const coId = user?.targetCompany?._id || user?.targetCompany
   const currentRole = user?.currentTargetRole || 'Full Stack Developer'
@@ -123,51 +121,6 @@ export function DashboardPage() {
 
     loadDashboardContent()
   }, [user, coId, currentRole])
-
-  // Toggle topic completion scoped to target company & role
-  const handleToggleTopic = async (topicId) => {
-    if (updatingTopicId) return
-    setUpdatingTopicId(topicId)
-    try {
-      const res = await api.curriculum.toggleTopic(topicId, coId, currentRole)
-      if (res.success) {
-        const nextCompleted = res.completedTopics || []
-        setCompletedTopicIds(nextCompleted)
-
-        // Keep roadmap data in sync
-        setRoadmapData(prev => {
-          if (!prev) return prev
-          const allTasks = prev.phases?.flatMap(p => p.tasks) || []
-          const uniqueIds = [...new Set(allTasks.map(t => t.taskId))]
-          const uniqueDone = [...new Set(allTasks.filter(t => nextCompleted.includes(t.taskId)).map(t => t.taskId))]
-          const pct = uniqueIds.length > 0 ? Math.round((uniqueDone.length / uniqueIds.length) * 100) : 0
-          return {
-            ...prev,
-            uniqueCompletedTopics: uniqueDone.length,
-            progressPercentage: pct
-          }
-        })
-
-        // Re-fetch readiness score to maintain 100% database synchronization
-        api.readiness.getOverall({ companyId: coId, role: currentRole })
-          .then(readinessRes => {
-            if (readinessRes.success && readinessRes.readiness) {
-              setReadinessData(readinessRes.readiness)
-            }
-          })
-          .catch(() => {})
-
-        showToast(
-          res.isCompleted ? 'Topic marked as completed! 🎉' : 'Topic marked as incomplete',
-          'success'
-        )
-      }
-    } catch (err) {
-      showToast(err.message || 'Failed to update topic status', 'danger')
-    } finally {
-      setUpdatingTopicId(null)
-    }
-  }
 
   // Start mock test exam session
   const handleStartExam = async () => {
@@ -481,7 +434,6 @@ export function DashboardPage() {
                 <div style={{ display: 'grid', gap: '8px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
                   {topics.map(topic => {
                     const isCompleted = completedTopicIds.includes(topic.id)
-                    const isToggling = updatingTopicId === topic.id
 
                     return (
                       <div
@@ -499,28 +451,24 @@ export function DashboardPage() {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
-                          <button
-                            type="button"
-                            className={`topic-checkbox-btn ${isCompleted ? 'checked' : ''}`}
-                            onClick={() => handleToggleTopic(topic.id)}
-                            disabled={isToggling}
-                            title={isCompleted ? 'Mark as incomplete' : 'Mark as completed'}
+                          <div
+                            className={`topic-checkbox-indicator ${isCompleted ? 'checked' : ''}`}
+                            title={isCompleted ? 'Completed on Roadmap' : 'Topic Guide'}
                             style={{
-                              background: 'transparent',
-                              border: 0,
-                              cursor: 'pointer',
-                              padding: 0,
                               color: isCompleted ? '#16a34a' : '#94a3b8',
                               marginTop: '2px',
-                              flexShrink: 0
+                              flexShrink: 0,
+                              cursor: 'default',
+                              display: 'inline-flex',
+                              alignItems: 'center'
                             }}
                           >
                             {isCompleted ? (
                               <CheckCircle2 size={18} className="check-icon-active" />
                             ) : (
-                              <Circle size={18} className="check-icon-empty" />
+                              <BookOpen size={16} className="topic-neutral-icon" style={{ color: '#94a3b8' }} />
                             )}
-                          </button>
+                          </div>
 
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '2px' }}>
@@ -807,21 +755,17 @@ export function DashboardPage() {
               gap: '10px',
               flexWrap: 'wrap'
             }}>
-              <button
-                type="button"
-                className={`button ${completedTopicIds.includes(selectedResourceTopic.id || selectedResourceTopic.topicId) ? 'secondary' : 'primary'}`}
-                onClick={() => handleToggleTopic(selectedResourceTopic.id || selectedResourceTopic.topicId)}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {completedTopicIds.includes(selectedResourceTopic.id || selectedResourceTopic.topicId) ? (
-                  <>
-                    <CheckCircle2 size={15} color="#16a34a" /> Marked Completed (Click to Uncheck)
-                  </>
+                  <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}>
+                    <CheckCircle2 size={16} /> Completed on Roadmap
+                  </span>
                 ) : (
-                  <>
-                    <Check size={15} /> Mark Topic as Completed
-                  </>
+                  <span style={{ color: '#64748b', fontSize: '12px' }}>
+                    Status: Incomplete · <Link to="/roadmap" style={{ color: '#2563eb', fontWeight: 600 }}>Mark on Roadmap</Link>
+                  </span>
                 )}
-              </button>
+              </div>
 
               <button
                 type="button"

@@ -118,6 +118,19 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const deleteAccount = async (password) => {
+    const res = await api.users.deleteAccount(password)
+    if (res.success) {
+      localStorage.removeItem('hireverse_token')
+      localStorage.removeItem('hireverse_user')
+      setToken(null)
+      setUser(null)
+      showToast('Your account and associated preparation data have been permanently deleted.', 'info')
+      return true
+    }
+    throw new Error(res.message || 'Account deletion failed')
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -127,6 +140,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        deleteAccount,
         refreshUser,
         setTarget,
         toast,

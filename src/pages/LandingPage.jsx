@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   ArrowRight,
   CheckCircle2,
@@ -8,36 +8,37 @@ import {
   Milestone,
   FileCheck2,
   Layers,
-  ShieldCheck,
-  GraduationCap,
-  Sparkles,
   ChevronDown,
-  Menu,
-  X,
-  Lock,
-  Compass,
-  Check,
-  TrendingUp,
-  UserCheck,
-  LayoutDashboard,
-  Zap,
-  HelpCircle,
-  FileText,
   BookOpen,
+  Building2,
   Clock,
-  Award,
-  Building2
+  Sparkles,
+  LayoutDashboard,
+  ShieldCheck,
+  Check,
+  Compass,
+  FileText,
+  Video,
+  Award
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import PublicNavbar from '../components/layout/PublicNavbar'
 import '../saas-landing.css'
 
 export function LandingPage() {
   const { user, token, loading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
-  const [activeFaq, setActiveFaq] = useState(0)
+  const [activeFaq, setActiveFaq] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [legalModal, setLegalModal] = useState(null) // 'privacy' | 'terms' | null
+  const [legalModal, setLegalModal] = useState(null) // 'privacy' | 'terms' | 'security' | null
+
+  // Active section and fixed navbar scroll state
+  const [activeSection, setActiveSection] = useState('hero')
+  const [isScrolled, setIsScrolled] = useState(false)
+  const isClickScrollingRef = useRef(false)
+  const clickTimerRef = useRef(null)
 
   const isAuthenticated = Boolean(user && token)
 
@@ -58,407 +59,509 @@ export function LandingPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Smooth scroll handler
+  // Smooth scroll handler with fixed navbar offset & reduced motion support
   const scrollToSection = (e, id) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setMobileMenuOpen(false)
+    setActiveSection(id)
+
+    // Lock automatic scroll spy momentarily during smooth scroll transition
+    isClickScrollingRef.current = true
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+    clickTimerRef.current = setTimeout(() => {
+      isClickScrollingRef.current = false
+    }, 800)
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const behavior = prefersReducedMotion ? 'auto' : 'smooth'
+
+    if (id === 'hero') {
+      window.scrollTo({
+        top: 0,
+        behavior
+      })
+      if (window.history.pushState) {
+        window.history.pushState(null, '', '#hero')
+      }
+      return
+    }
+
     const element = document.getElementById(id)
     if (element) {
-      const navOffset = 76
+      const navOffset = 74
       const elementPosition = element.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - navOffset
+
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior
       })
+
+      if (window.history.pushState) {
+        window.history.pushState(null, '', `#${id}`)
+      }
     }
   }
+
+  // Active section tracking & scroll elevation state
+  useEffect(() => {
+    const sectionIds = ['hero', 'features', 'overview', 'workflow', 'faq']
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset
+      setIsScrolled(scrollY > 10)
+
+      if (isClickScrollingRef.current) return
+
+      // Boundary 1: Top of page (Hero/Home)
+      if (scrollY < 80) {
+        setActiveSection('hero')
+        return
+      }
+
+      // Boundary 2: Bottom of page (FAQ / final content)
+      const windowHeight = window.innerHeight
+      const documentHeight = document.documentElement.scrollHeight
+      if (scrollY + windowHeight >= documentHeight - 80) {
+        setActiveSection('faq')
+        return
+      }
+
+      // Intermediate sections: check which section intersects 110px from top
+      const detectionLine = 110
+      for (let i = 0; i < sectionIds.length; i++) {
+        const id = sectionIds[i]
+        const el = document.getElementById(id)
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          if (rect.top <= detectionLine && rect.bottom > detectionLine) {
+            setActiveSection(id)
+            return
+          }
+        }
+      }
+    }
+
+    let rafId = null
+    const onScroll = () => {
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(handleScroll)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+
+    // Check initial position on mount
+    handleScroll()
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (rafId) cancelAnimationFrame(rafId)
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+    }
+  }, [])
+
+  // Handle deep-link section hash or navigation state
+  useEffect(() => {
+    const target = location.state?.scrollTo || location.hash.replace('#', '')
+    if (target) {
+      const sectionIds = ['hero', 'features', 'overview', 'workflow', 'faq']
+      const targetId = (target === 'platform' || target === 'about')
+        ? 'overview'
+        : (target === 'how-it-works' ? 'workflow' : target)
+
+      if (sectionIds.includes(targetId)) {
+        const timer = setTimeout(() => {
+          scrollToSection(null, targetId)
+        }, 100)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [location.hash, location.state])
 
   const faqs = [
     {
       q: 'What is HireVerse?',
-      a: 'HireVerse is a comprehensive placement preparation and interview readiness platform built for engineering students and college placement departments. It centralizes structured learning topics, milestone roadmaps, server-timed mock assessments, and verifiable progress metrics into one unified workspace.'
+      a: 'HireVerse is a comprehensive placement and interview preparation platform designed for college students, graduates, freshers, and tech job seekers. It brings together company-specific topic syllabi, structured milestone roadmaps, server-timed mock assessments, and progress tracking in one unified workspace.'
     },
     {
-      q: 'Who can use HireVerse?',
-      a: 'HireVerse is designed for engineering students preparing for on-campus and off-campus technical placements. Additionally, college placement officers and faculty coordinators use the platform to monitor cohort readiness, review benchmark test results, and manage campus placement drives.'
+      q: 'How does company-specific preparation work?',
+      a: 'When you select your target company and job role, HireVerse filters relevant syllabus topics, core CS fundamentals, and assessment formats tailored to typical recruitment patterns for that organization.'
     },
     {
-      q: 'How do I get started?',
-      a: 'Getting started takes less than a minute. Click "Get Started" to create your free student account, enter your college, branch, and graduation year, and immediately access your personalized preparation dashboard.'
+      q: 'What are the mock assessments based on?',
+      a: 'Mock tests feature representative questions across Data Structures, Algorithms, DBMS, Operating Systems, Computer Networks, and Aptitude. Assessments are timed with optional negative marking to simulate real recruitment rounds.'
     },
     {
-      q: 'Can I track my preparation progress?',
-      a: 'Yes. HireVerse automatically records all your question attempts, timed test results, milestone completions, and topic accuracies. These are combined into an objective readiness score that reflects your genuine preparation progress.'
+      q: 'How does roadmap progress tracking work?',
+      a: 'As you study syllabus topics in the Preparation Hub, you can mark them as completed. Your roadmap milestones and overall syllabus completion metrics update automatically in real time.'
     },
     {
-      q: 'How do I access my dashboard?',
-      a: 'Once signed in, click "Go to Dashboard" in the navigation bar or anywhere across the homepage. You can also sign in directly using the "Sign In" button with your existing account credentials.'
+      q: 'Who can access the Placement Officer and Admin Portals?',
+      a: 'College placement coordinators and faculty can access the Placement Portal to monitor cohort readiness and organize campus drives. System administrators manage company data, question banks, and user accounts through the Admin Workspace.'
     },
     {
-      q: 'Is my progress saved?',
-      a: 'Yes. All your activity—including completed topics, notes, bookmarks, mock assessment scores, and roadmap milestone completions—is securely stored in the cloud database so you can seamlessly continue across sessions.'
+      q: 'Is my preparation progress saved across devices?',
+      a: 'Yes. All completed syllabus items, test scores, milestone checkpoints, and target company selections are stored securely in the database and synchronized whenever you sign in.'
     }
   ]
 
   return (
     <div className="saas-landing">
-      {/* 2. Professional Navbar */}
-      <header className="saas-navbar">
-        <div className="saas-nav-container">
-          {/* Brand Logo */}
-          <Link to="/" className="saas-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="saas-brand-icon">
-              <span>H</span>
-            </div>
-            <div className="saas-brand-text">
-              <strong>Hire<span>Verse</span></strong>
-              <small>Placement Platform</small>
-            </div>
-          </Link>
+      {/* 1. Persistent Public Navbar */}
+      <PublicNavbar
+        activeSection={activeSection}
+        onScrollToSection={scrollToSection}
+      />
 
-          {/* Center Navigation Links */}
-          <nav className="saas-nav-menu" aria-label="Main Navigation">
-            <a href="#hero" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-              Home
-            </a>
-            <a href="#platform" onClick={(e) => scrollToSection(e, 'platform')}>
-              Platform
-            </a>
-            <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')}>
-              How It Works
-            </a>
-            <a href="#about" onClick={(e) => scrollToSection(e, 'about')}>
-              About
-            </a>
-            <a href="#faq" onClick={(e) => scrollToSection(e, 'faq')}>
-              FAQ
-            </a>
-          </nav>
-
-          {/* Right Action Buttons */}
-          <div className="saas-nav-actions">
-            {!loading && (
-              <>
-                {isAuthenticated ? (
-                  <button
-                    type="button"
-                    className="saas-btn saas-btn-primary"
-                    onClick={() => navigate(dashboardRoute)}
-                  >
-                    <LayoutDashboard size={15} />
-                    <span>Go to Dashboard</span>
-                  </button>
-                ) : (
-                  <>
-                    <Link to="/login" className="saas-btn saas-btn-secondary">
-                      Sign In
-                    </Link>
-                    <Link to="/register" className="saas-btn saas-btn-primary">
-                      <span>Register</span>
-                      <ArrowRight size={14} />
-                    </Link>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Mobile Hamburger Trigger */}
-            <button
-              type="button"
-              className="saas-mobile-toggle"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="saas-mobile-menu">
-            <nav className="saas-mobile-links">
-              <a href="#hero" onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-                Home
-              </a>
-              <a href="#platform" onClick={(e) => scrollToSection(e, 'platform')}>
-                Platform
-              </a>
-              <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')}>
-                How It Works
-              </a>
-              <a href="#about" onClick={(e) => scrollToSection(e, 'about')}>
-                About
-              </a>
-              <a href="#faq" onClick={(e) => scrollToSection(e, 'faq')}>
-                FAQ
-              </a>
-            </nav>
-
-            <div className="saas-mobile-actions">
-              {isAuthenticated ? (
-                <button
-                  type="button"
-                  className="saas-btn saas-btn-primary saas-btn-block"
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    navigate(dashboardRoute)
-                  }}
-                >
-                  <LayoutDashboard size={15} />
-                  <span>Go to Dashboard</span>
-                </button>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="saas-btn saas-btn-secondary saas-btn-block"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="saas-btn saas-btn-primary saas-btn-block"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <span>Get Started</span>
-                    <ArrowRight size={14} />
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
-      <main>
-        {/* 3. Premium Hero Section */}
+      <main className="saas-main-content">
+        {/* 2. Hero Section (Two-Column Layout) */}
         <section id="hero" className="saas-hero-section">
           <div className="saas-container">
-            <div className="saas-hero-content">
-              {/* Badge */}
-              <div className="saas-pill">
-                <Sparkles size={14} className="saas-pill-sparkle" />
-                <span>Engineered for Engineering Campus Placements</span>
+            <div className="saas-hero-grid">
+              {/* Left Column: Compelling Content */}
+              <div className="saas-hero-copy">
+                {/* Eyebrow Label */}
+                <div className="saas-hero-eyebrow">
+                  <span className="saas-hero-eyebrow-dot" />
+                  <span>YOUR CAREER. YOUR PREPARATION. YOUR NEXT STEP.</span>
+                </div>
+
+                {/* Main Headline */}
+                <h1 className="saas-hero-title">
+                  Turn Your Placement Goals Into a <span className="highlight">Clear Plan.</span>
+                </h1>
+
+                {/* Supporting Content */}
+                <p className="saas-hero-subtitle">
+                  Prepare for your target company with structured learning resources, a guided syllabus roadmap, and mock assessments that help you understand your progress.
+                </p>
+
+                {/* Action Buttons */}
+                <div className="saas-hero-actions">
+                  {isAuthenticated ? (
+                    <>
+                      <button
+                        type="button"
+                        className="saas-btn saas-btn-primary saas-btn-lg"
+                        onClick={() => navigate(dashboardRoute)}
+                      >
+                        <LayoutDashboard size={16} />
+                        <span>Go to Dashboard</span>
+                      </button>
+                      <a
+                        href="#features"
+                        className="saas-btn saas-btn-outline saas-btn-lg"
+                        onClick={(e) => scrollToSection(e, 'features')}
+                      >
+                        <span>Explore the Platform</span>
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/register" className="saas-btn saas-btn-primary saas-btn-lg">
+                        <span>Register</span>
+                        <ArrowRight size={16} />
+                      </Link>
+                      <a
+                        href="#features"
+                        className="saas-btn saas-btn-outline saas-btn-lg"
+                        onClick={(e) => scrollToSection(e, 'features')}
+                      >
+                        <span>Explore the Platform</span>
+                      </a>
+                    </>
+                  )}
+                </div>
+
+                {/* Subtle Supporting Line */}
+                <div className="saas-hero-support-line">
+                  <span>Company-focused learning</span>
+                  <em>·</em>
+                  <span>Structured preparation</span>
+                  <em>·</em>
+                  <span>Progress tracking</span>
+                </div>
               </div>
 
-              {/* Main Heading */}
-              <h1 className="saas-hero-title">
-                Your Placement Journey <span className="saas-hero-gradient-text">Starts Here.</span>
-              </h1>
+              {/* Right Column: Layered Product Showcase */}
+              <div className="saas-hero-visual">
+                {/* Minimal Decorative Geometry */}
+                <div className="mockup-deco-shape mockup-deco-shape-1" />
+                <div className="mockup-deco-shape mockup-deco-shape-2" />
 
-              {/* Supporting Description */}
-              <p className="saas-hero-subtitle">
-                A smarter way to organize your preparation, study structured learning topics, and track your progress toward placement readiness.
-              </p>
+                {/* Main Preview Panel (Application-Style) */}
+                <div className="saas-product-mockup">
+                  {/* Window Bar */}
+                  <div className="mockup-header">
+                    <div className="mockup-window-controls">
+                      <span className="mockup-dot mockup-dot-red" />
+                      <span className="mockup-dot mockup-dot-yellow" />
+                      <span className="mockup-dot mockup-dot-green" />
+                    </div>
+                    <div className="mockup-titlebar">
+                      <span>HireVerse</span>
+                      <span className="mockup-titlebar-tag">Preparation Hub</span>
+                    </div>
+                    <div className="mockup-header-action">
+                      <ShieldCheck size={13} />
+                      <span>Verified Syllabus</span>
+                    </div>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="saas-hero-actions">
-                {isAuthenticated ? (
-                  <>
-                    <button
-                      type="button"
-                      className="saas-btn saas-btn-primary saas-btn-lg"
-                      onClick={() => navigate(dashboardRoute)}
-                    >
-                      <span>Go to Dashboard</span>
-                      <ArrowRight size={16} />
-                    </button>
-                    <a
-                      href="#platform"
-                      className="saas-btn saas-btn-outline saas-btn-lg"
-                      onClick={(e) => scrollToSection(e, 'platform')}
-                    >
-                      <span>Explore Platform</span>
-                    </a>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/register" className="saas-btn saas-btn-primary saas-btn-lg">
-                      <span>Get Started</span>
-                      <ArrowRight size={16} />
-                    </Link>
-                    <a
-                      href="#platform"
-                      className="saas-btn saas-btn-outline saas-btn-lg"
-                      onClick={(e) => scrollToSection(e, 'platform')}
-                    >
-                      <span>Explore Platform</span>
-                    </a>
-                  </>
-                )}
-              </div>
+                  {/* Window Body */}
+                  <div className="mockup-body">
+                    {/* Placement Target Card */}
+                    <div className="mockup-target-card">
+                      <div className="mockup-target-info">
+                        <div className="mockup-company-avatar">
+                          <span>A</span>
+                        </div>
+                        <div className="mockup-target-titles">
+                          <strong>Accenture · Full Stack Developer</strong>
+                          <span>3 Rounds · Technical Interview & Assessment</span>
+                        </div>
+                      </div>
+                      <span className="mockup-target-badge">Target Selected</span>
+                    </div>
 
-              {/* Key Trust Signals */}
-              <div className="saas-hero-proof">
-                <div className="saas-proof-item">
-                  <CheckCircle2 size={15} />
-                  <span>Structured 4-Phase Roadmaps</span>
+                    {/* Split Metrics: Syllabus Progress & Mock Assessment */}
+                    <div className="mockup-metrics-row">
+                      {/* Syllabus Progress */}
+                      <div className="mockup-metric-card">
+                        <div className="mockup-metric-head">
+                          <span className="mockup-metric-label">Syllabus Progress</span>
+                          <span className="mockup-metric-pill">24 / 35 Topics</span>
+                        </div>
+                        <div className="mockup-metric-value">68%</div>
+                        <div className="mockup-progress-track">
+                          <div className="mockup-progress-fill" style={{ width: '68%' }} />
+                        </div>
+                        <div className="mockup-metric-sub">11 remaining topics</div>
+                      </div>
+
+                      {/* Mock Assessment Performance */}
+                      <div className="mockup-metric-card accent">
+                        <div className="mockup-metric-head">
+                          <span className="mockup-metric-label">Latest Assessment</span>
+                          <span className="mockup-metric-pill">Submitted</span>
+                        </div>
+                        <div className="mockup-metric-value">82%</div>
+                        <div className="mockup-metric-sub">Technical Mock #1 · 42m duration</div>
+                        <div className="mockup-metric-sub" style={{ color: 'var(--hv-blue)', fontWeight: 600, marginTop: '6px' }}>
+                          Negative marking simulated
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Compact Roadmap Preview */}
+                    <div className="mockup-roadmap-preview">
+                      <div className="mockup-roadmap-header">
+                        <span>Guided Roadmap Milestones</span>
+                        <span style={{ fontSize: '11px', color: 'var(--hv-blue)', fontWeight: 600 }}>Phase 2 of 4</span>
+                      </div>
+                      <div className="mockup-roadmap-items">
+                        <div className="mockup-roadmap-item completed">
+                          <div className="mockup-item-left">
+                            <CheckCircle2 size={15} color="var(--hv-green)" />
+                            <span>Phase 1 — Core Programming & DSA</span>
+                          </div>
+                          <span className="mockup-item-status done">
+                            <Check size={12} /> Completed
+                          </span>
+                        </div>
+
+                        <div className="mockup-roadmap-item active">
+                          <div className="mockup-item-left">
+                            <Sparkles size={15} color="var(--hv-blue)" />
+                            <span>Phase 2 — Core CS: DBMS & Operating Systems</span>
+                          </div>
+                          <span className="mockup-item-status progress">In Progress</span>
+                        </div>
+
+                        <div className="mockup-roadmap-item">
+                          <div className="mockup-item-left">
+                            <Clock size={15} color="var(--hv-slate)" />
+                            <span>Phase 3 — System Architecture & Web Frameworks</span>
+                          </div>
+                          <span className="mockup-item-status next">Upcoming</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="saas-proof-item">
-                  <CheckCircle2 size={15} />
-                  <span>Server-Timed Assessments</span>
+
+                {/* Secondary Floating Elements */}
+                <div className="mockup-floating-badge">
+                  <div className="mockup-floating-icon">
+                    <CheckCircle2 size={18} />
+                  </div>
+                  <div className="mockup-floating-text">
+                    <strong>Next Milestone: DBMS & SQL</strong>
+                    <span>4 topics remaining in Phase 2</span>
+                  </div>
                 </div>
-                <div className="saas-proof-item">
-                  <CheckCircle2 size={15} />
-                  <span>Deterministic Readiness Scoring</span>
-                </div>
-                <div className="saas-proof-item">
-                  <CheckCircle2 size={15} />
-                  <span>College Placement Cell Portal</span>
+
+                <div className="mockup-floating-pill">
+                  <span className="mockup-pill-dot" />
+                  <span>Readiness Index: 74% On Track</span>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 4. Platform Features Section */}
-        <section id="platform" className="saas-section saas-features-section">
+        {/* 3. High-Quality Value Strip */}
+        <section className="saas-value-strip" aria-label="Key Capabilities">
+          <div className="saas-container">
+            <div className="saas-value-grid">
+              <div className="saas-value-item">
+                <div className="saas-value-icon">
+                  <Target size={18} />
+                </div>
+                <div className="saas-value-label">Company-Specific Preparation</div>
+              </div>
+
+              <div className="saas-value-item">
+                <div className="saas-value-icon">
+                  <BookOpen size={18} />
+                </div>
+                <div className="saas-value-label">Curated Learning Resources</div>
+              </div>
+
+              <div className="saas-value-item">
+                <div className="saas-value-icon">
+                  <Milestone size={18} />
+                </div>
+                <div className="saas-value-label">Guided Syllabus Roadmap</div>
+              </div>
+
+              <div className="saas-value-item">
+                <div className="saas-value-icon">
+                  <FileCheck2 size={18} />
+                </div>
+                <div className="saas-value-label">Mock Assessment Practice</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. Premium Features Section */}
+        <section id="features" className="saas-section saas-features-section">
           <div className="saas-container">
             <div className="saas-section-header">
-              <span className="saas-section-eyebrow">PLATFORM CAPABILITIES</span>
-              <h2 className="saas-section-title">Everything you need for structured readiness.</h2>
+              <span className="saas-section-eyebrow">BUILT FOR YOUR PLACEMENT JOURNEY</span>
+              <h2 className="saas-section-title">Everything You Need. One Focused Preparation Space.</h2>
               <p className="saas-section-description">
-                Replace disconnected practice sites and fragmented resources with a focused, verifiable preparation ecosystem.
+                Bring your learning resources, preparation plan, and practice assessments together in one organized experience.
               </p>
             </div>
 
             <div className="saas-features-grid">
               {/* Feature 1 */}
               <div className="saas-feature-card">
-                <div className="saas-feature-icon-wrap">
-                  <Layers size={22} />
+                <div className="saas-feature-icon-container">
+                  <Building2 size={22} />
                 </div>
-                <div className="saas-feature-tag">Milestone-Driven</div>
-                <h3>Structured Preparation</h3>
+                <div className="saas-feature-number">01 / TARGET</div>
+                <h3>Company-Focused Preparation</h3>
                 <p>
-                  Work through clear 4-phase preparation roadmaps that systematically cover algorithmic patterns, core CS fundamentals, and technical interview problem solving.
+                  Choose your target company and role to focus your preparation around relevant syllabus topics.
                 </p>
               </div>
 
-              {/* Feature 2 */}
-              <div className="saas-feature-card">
-                <div className="saas-feature-icon-wrap">
-                  <FileCheck2 size={22} />
+              {/* Feature 2 (Featured card) */}
+              <div className="saas-feature-card is-featured">
+                <div className="saas-feature-icon-container">
+                  <BookOpen size={22} />
                 </div>
-                <div className="saas-feature-tag">Server-Governed</div>
-                <h3>Curriculum & Mock Assessments</h3>
+                <div className="saas-feature-number">02 / CURRICULUM</div>
+                <h3>Preparation Hub</h3>
                 <p>
-                  Master structured topics organized by company and role, and take full-length mock tests governed by strict timers and negative marking constraints.
+                  Access mapped learning resources and organize your study around the topics you need to cover.
                 </p>
               </div>
 
               {/* Feature 3 */}
               <div className="saas-feature-card">
-                <div className="saas-feature-icon-wrap">
-                  <BarChart3 size={22} />
+                <div className="saas-feature-icon-container">
+                  <Milestone size={22} />
                 </div>
-                <div className="saas-feature-tag">Real-Time Diagnostics</div>
-                <h3>Performance Tracking</h3>
+                <div className="saas-feature-number">03 / STAGES</div>
+                <h3>Guided Roadmap</h3>
                 <p>
-                  Review deep diagnostic analytics detailing your problem-solving accuracy, subject score breakdowns, pacing metrics, and specific weak topics requiring reinforcement.
+                  Follow your preparation stages, mark completed topics, and track your syllabus progress.
                 </p>
               </div>
 
               {/* Feature 4 */}
               <div className="saas-feature-card">
-                <div className="saas-feature-icon-wrap">
-                  <Target size={22} />
+                <div className="saas-feature-icon-container">
+                  <FileCheck2 size={22} />
                 </div>
-                <div className="saas-feature-tag">Deterministic Score</div>
-                <h3>Personalized Progress</h3>
+                <div className="saas-feature-number">04 / PRACTICE</div>
+                <h3>Mock Assessments</h3>
                 <p>
-                  Experience a transparent readiness scoring engine that dynamically updates with every topic completion and mock test, showing your exact distance to placement readiness.
+                  Practice with available assessments and review your submitted performance.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 5. How It Works Section */}
-        <section id="how-it-works" className="saas-section saas-workflow-section">
+        {/* 5. Visual Product-Explanation Section (Editorial Split) */}
+        <section id="overview" className="saas-section saas-explain-section">
           <div className="saas-container">
-            <div className="saas-section-header">
-              <span className="saas-section-eyebrow">HOW IT WORKS</span>
-              <h2 className="saas-section-title">Three steps to placement readiness.</h2>
-              <p className="saas-section-description">
-                A simple, systematic workflow designed to turn consistent engineering effort into measurable campus hiring results.
-              </p>
-            </div>
-
-            <div className="saas-workflow-grid">
-              {/* Step 1 */}
-              <div className="saas-workflow-card">
-                <div className="saas-workflow-badge">
-                  <span className="step-number">01</span>
-                  <div className="step-icon"><UserCheck size={18} /></div>
-                </div>
-                <h3>Create Your Account</h3>
-                <p>
-                  Register in under 60 seconds with your engineering degree, branch, and graduation year to initialize your structured preparation profile.
+            <div className="saas-explain-grid">
+              {/* Left Column: Explanatory Content */}
+              <div className="saas-explain-copy">
+                <span className="saas-section-eyebrow">A MORE ORGANIZED WAY TO PREPARE</span>
+                <h2 className="saas-explain-heading">Know What to Study. Know Where You Stand.</h2>
+                <p className="saas-explain-lead">
+                  Preparation becomes easier to manage when your target, learning plan, and progress are organized in one place.
                 </p>
-              </div>
 
-              {/* Step 2 */}
-              <div className="saas-workflow-card">
-                <div className="saas-workflow-badge">
-                  <span className="step-number">02</span>
-                  <div className="step-icon"><Compass size={18} /></div>
-                </div>
-                <h3>Access Your Workspace</h3>
-                <p>
-                  Unlock your structured preparation roadmap, topic-wise learning guides, and server-timed mock assessments inside your dedicated student dashboard.
-                </p>
-              </div>
+                <div className="saas-explain-benefits">
+                  <div className="saas-benefit-item">
+                    <div className="saas-benefit-check">
+                      <Check size={14} />
+                    </div>
+                    <div className="saas-benefit-text">
+                      <strong>A clear starting point</strong>
+                      <span>— Focus on the company and role you selected.</span>
+                    </div>
+                  </div>
 
-              {/* Step 3 */}
-              <div className="saas-workflow-card">
-                <div className="saas-workflow-badge">
-                  <span className="step-number">03</span>
-                  <div className="step-icon"><TrendingUp size={18} /></div>
-                </div>
-                <h3>Study, Test & Improve</h3>
-                <p>
-                  Master structured topics, complete timed assessment simulations, analyze weak area diagnostics, and build verifiable readiness for campus drives.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+                  <div className="saas-benefit-item">
+                    <div className="saas-benefit-check">
+                      <Check size={14} />
+                    </div>
+                    <div className="saas-benefit-text">
+                      <strong>A structured learning plan</strong>
+                      <span>— Follow mapped syllabus topics and resources.</span>
+                    </div>
+                  </div>
 
-        {/* 6. About HireVerse Section */}
-        <section id="about" className="saas-section saas-about-section">
-          <div className="saas-container">
-            <div className="saas-about-grid">
-              {/* Left Column: Purpose & Narrative */}
-              <div className="saas-about-narrative">
-                <span className="saas-section-eyebrow">ABOUT HIREVERSE</span>
-                <h2 className="saas-about-heading">
-                  Engineered to bring clarity, structure, and measurement to campus placements.
-                </h2>
-                <div className="saas-about-paragraphs">
-                  <p>
-                    For engineering students, preparing for campus recruitment often feels fragmented. Students bounce between scattered problem sets, theoretical notes, and conflicting advice without a reliable gauge of whether they are genuinely ready for technical rounds.
-                  </p>
-                  <p>
-                    HireVerse was built to eliminate this confusion. By organizing the preparation journey into structured roadmaps, objective question verification, server-timed mock assessments, and transparent readiness metrics, we give students a focused, measurable path toward their career goals.
-                  </p>
-                  <p>
-                    Every score and benchmark in HireVerse is deterministic and backed by recorded student activity—giving both students and college placement departments verified confidence in placement readiness.
-                  </p>
+                  <div className="saas-benefit-item">
+                    <div className="saas-benefit-check">
+                      <Check size={14} />
+                    </div>
+                    <div className="saas-benefit-text">
+                      <strong>Visible preparation progress</strong>
+                      <span>— See the topics you have completed and those that remain.</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="saas-about-cta">
+                <div>
                   {isAuthenticated ? (
                     <button
                       type="button"
                       className="saas-btn saas-btn-primary"
                       onClick={() => navigate(dashboardRoute)}
                     >
-                      <span>Open Your Workspace</span>
+                      <span>Open Preparation Hub</span>
                       <ArrowRight size={14} />
                     </button>
                   ) : (
@@ -470,47 +573,163 @@ export function LandingPage() {
                 </div>
               </div>
 
-              {/* Right Column: Key Principles */}
-              <div className="saas-about-principles">
-                <div className="saas-principle-card">
-                  <div className="saas-principle-icon">
-                    <ShieldCheck size={20} />
+              {/* Right Column: Realistic Product Preview Panel */}
+              <div className="saas-explain-preview">
+                <div className="explain-preview-card">
+                  {/* Card Header */}
+                  <div className="explain-preview-head">
+                    <div className="explain-preview-company">
+                      <div className="explain-preview-avatar">A</div>
+                      <div>
+                        <div className="explain-preview-company-name">Accenture Syllabus</div>
+                        <div className="explain-preview-company-role">Full Stack Developer Track</div>
+                      </div>
+                    </div>
+                    <div className="explain-preview-filter-tabs">
+                      <span className="explain-tab-pill active">All (35)</span>
+                      <span className="explain-tab-pill inactive">Completed (24)</span>
+                      <span className="explain-tab-pill inactive">Remaining (11)</span>
+                    </div>
                   </div>
-                  <div>
-                    <h4>Purpose-Built for Engineering</h4>
-                    <p>Designed around real campus hiring formats, online assessment constraints, and core technical interview standards.</p>
-                  </div>
-                </div>
 
-                <div className="saas-principle-card">
-                  <div className="saas-principle-icon">
-                    <BarChart3 size={20} />
-                  </div>
-                  <div>
-                    <h4>Zero Fabricated Metrics</h4>
-                    <p>Transparent mathematical evaluation based strictly on actual curriculum completion, roadmap milestones, and completed mock exams.</p>
-                  </div>
-                </div>
+                  {/* Topic Rows */}
+                  <div className="explain-preview-body">
+                    <div className="explain-topic-row">
+                      <div className="explain-topic-left">
+                        <div className="explain-topic-checkbox checked">
+                          <Check size={13} />
+                        </div>
+                        <div className="explain-topic-info">
+                          <strong>Sliding Window & Two-Pointer Patterns</strong>
+                          <span>DSA · Arrays & Strings</span>
+                        </div>
+                      </div>
+                      <div className="explain-topic-badges">
+                        <span className="explain-resource-pill">
+                          <FileText size={11} /> 2 Docs
+                        </span>
+                        <span className="explain-resource-pill">
+                          <Video size={11} /> 1 Video
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="saas-principle-card">
-                  <div className="saas-principle-icon">
-                    <Layers size={20} />
-                  </div>
-                  <div>
-                    <h4>Unified Preparation Experience</h4>
-                    <p>Centralizes roadmap tracking, problem solving, full-length mock exams, and diagnostics into one cohesive platform.</p>
-                  </div>
-                </div>
+                    <div className="explain-topic-row">
+                      <div className="explain-topic-left">
+                        <div className="explain-topic-checkbox checked">
+                          <Check size={13} />
+                        </div>
+                        <div className="explain-topic-info">
+                          <strong>Binary Search & Search Space Reduction</strong>
+                          <span>DSA · Searching Algorithms</span>
+                        </div>
+                      </div>
+                      <div className="explain-topic-badges">
+                        <span className="explain-resource-pill">
+                          <FileText size={11} /> 1 Doc
+                        </span>
+                        <span className="explain-resource-pill">
+                          <Award size={11} /> 8 Questions
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="saas-principle-card">
-                  <div className="saas-principle-icon">
-                    <GraduationCap size={20} />
-                  </div>
-                  <div>
-                    <h4>Placement Cell Synergy</h4>
-                    <p>Supports campus placement officers and faculty mentors with cohort readiness tracking, eligibility filters, and drive announcements.</p>
+                    <div className="explain-topic-row">
+                      <div className="explain-topic-left">
+                        <div className="explain-topic-checkbox progress" />
+                        <div className="explain-topic-info">
+                          <strong>Transactions & ACID Properties</strong>
+                          <span>Core CS · Database Management Systems</span>
+                        </div>
+                      </div>
+                      <div className="explain-topic-badges">
+                        <span className="explain-resource-pill" style={{ color: 'var(--hv-blue)', borderColor: 'rgba(54, 92, 245, 0.25)' }}>
+                          <Clock size={11} /> In Study
+                        </span>
+                        <span className="explain-resource-pill">
+                          <FileText size={11} /> 1 Guide
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="explain-topic-row">
+                      <div className="explain-topic-left">
+                        <div className="explain-topic-checkbox progress" />
+                        <div className="explain-topic-info">
+                          <strong>Process Scheduling & Deadlocks</strong>
+                          <span>Core CS · Operating Systems</span>
+                        </div>
+                      </div>
+                      <div className="explain-topic-badges">
+                        <span className="explain-resource-pill">
+                          <FileText size={11} /> 2 Guides
+                        </span>
+                        <span className="explain-resource-pill">
+                          <Award size={11} /> 5 Questions
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 6. Explain the Workflow Simply */}
+        <section id="workflow" className="saas-section saas-workflow-section">
+          <div className="saas-container">
+            <div className="saas-section-header">
+              <span className="saas-section-eyebrow">HOW IT WORKS</span>
+              <h2 className="saas-section-title">From Preparation to Practice</h2>
+              <p className="saas-section-description">
+                A simple, systematic workflow designed to turn consistent preparation effort into measurable interview and hiring results.
+              </p>
+            </div>
+
+            <div className="saas-workflow-grid">
+              <div className="saas-workflow-line" />
+
+              {/* Step 1 */}
+              <div className="saas-step-card">
+                <div className="saas-step-header">
+                  <span className="saas-step-number">01</span>
+                  <div className="saas-step-icon">
+                    <Target size={20} />
+                  </div>
+                </div>
+                <h3>Choose Your Target</h3>
+                <p>
+                  Select the company and job role you want to prepare for.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="saas-step-card">
+                <div className="saas-step-header">
+                  <span className="saas-step-number">02</span>
+                  <div className="saas-step-icon">
+                    <BookOpen size={20} />
+                  </div>
+                </div>
+                <h3>Learn with Structure</h3>
+                <p>
+                  Use the Preparation Hub and Roadmap to study relevant topics and track completion.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="saas-step-card">
+                <div className="saas-step-header">
+                  <span className="saas-step-number">03</span>
+                  <div className="saas-step-icon">
+                    <FileCheck2 size={20} />
+                  </div>
+                </div>
+                <h3>Practice and Review</h3>
+                <p>
+                  Attempt mock assessments and review your submitted scores.
+                </p>
               </div>
             </div>
           </div>
@@ -559,17 +778,17 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 8. Final Call-to-Action Section */}
-        <section className="saas-section saas-cta-section">
+        {/* 8. Strong Final Call to Action */}
+        <section className="saas-cta-section">
           <div className="saas-container">
             <div className="saas-cta-card">
-              <div className="saas-cta-badge">
-                <Sparkles size={14} />
-                <span>Placement Readiness Platform</span>
+              <div className="saas-cta-eyebrow">
+                <Sparkles size={13} />
+                <span>PLACEMENT READINESS PLATFORM</span>
               </div>
-              <h2 className="saas-cta-heading">Ready to Take the Next Step?</h2>
+              <h2 className="saas-cta-heading">Make Your Preparation More Intentional.</h2>
               <p className="saas-cta-description">
-                Build consistency, measure your progress, and move forward with confidence.
+                Build a consistent study plan, follow your progress, and prepare for your next placement opportunity with HireVerse.
               </p>
               <div className="saas-cta-actions">
                 {isAuthenticated ? (
@@ -584,7 +803,7 @@ export function LandingPage() {
                 ) : (
                   <>
                     <Link to="/register" className="saas-btn saas-btn-white saas-btn-lg">
-                      <span>Get Started</span>
+                      <span>Get Started with HireVerse</span>
                       <ArrowRight size={16} />
                     </Link>
                     <Link to="/login" className="saas-btn saas-btn-translucent saas-btn-lg">
@@ -598,15 +817,19 @@ export function LandingPage() {
         </section>
       </main>
 
-      {/* 9. Professional Footer */}
+      {/* 9. Complete Polished Footer */}
       <footer className="saas-footer">
         <div className="saas-container">
           <div className="saas-footer-main">
-            {/* Brand Col */}
+            {/* Brand Column */}
             <div className="saas-footer-brand-col">
-              <Link to="/" className="saas-brand saas-brand-footer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <Link
+                to="/"
+                className="saas-brand saas-brand-footer"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              >
                 <div className="saas-brand-icon">
-                  <span>H</span>
+                  <Compass size={20} />
                 </div>
                 <div className="saas-brand-text">
                   <strong>Hire<span>Verse</span></strong>
@@ -614,11 +837,11 @@ export function LandingPage() {
                 </div>
               </Link>
               <p className="saas-footer-desc">
-                Company-Wise Placement Preparation & Interview Readiness Platform. Structured preparation roadmaps, server-timed mock tests, and verifiable readiness scoring.
+                Company-Wise Placement Preparation & Interview Readiness Platform. Structured syllabus roadmaps, mapped resources, and server-timed mock assessments.
               </p>
               <div className="saas-footer-badge">
                 <CheckCircle2 size={13} />
-                <span>Built for Engineering Students & Placement Cells</span>
+                <span>Built for Students, Graduates & Tech Job Seekers</span>
               </div>
             </div>
 
@@ -626,11 +849,37 @@ export function LandingPage() {
             <div className="saas-footer-links-col">
               <h4>Platform</h4>
               <ul>
-                <li><a href="#hero" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</a></li>
-                <li><a href="#platform" onClick={(e) => scrollToSection(e, 'platform')}>Platform Features</a></li>
-                <li><a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')}>How It Works</a></li>
-                <li><a href="#about" onClick={(e) => scrollToSection(e, 'about')}>About HireVerse</a></li>
-                <li><a href="#faq" onClick={(e) => scrollToSection(e, 'faq')}>FAQ</a></li>
+                <li>
+                  <a
+                    href="#hero"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                  >
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" onClick={(e) => scrollToSection(e, 'features')}>
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#overview" onClick={(e) => scrollToSection(e, 'overview')}>
+                    Platform Overview
+                  </a>
+                </li>
+                <li>
+                  <a href="#workflow" onClick={(e) => scrollToSection(e, 'workflow')}>
+                    How It Works
+                  </a>
+                </li>
+                <li>
+                  <a href="#faq" onClick={(e) => scrollToSection(e, 'faq')}>
+                    FAQ
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -639,19 +888,29 @@ export function LandingPage() {
               <h4>Workspace Portals</h4>
               <ul>
                 {isAuthenticated ? (
-                  <li><Link to={dashboardRoute}>Student Dashboard</Link></li>
+                  <li>
+                    <Link to={dashboardRoute}>Preparation Dashboard</Link>
+                  </li>
                 ) : (
                   <>
-                    <li><Link to="/login">Student Sign In</Link></li>
-                    <li><Link to="/register">Student Registration</Link></li>
+                    <li>
+                      <Link to="/login">Candidate Sign In</Link>
+                    </li>
+                    <li>
+                      <Link to="/register">Candidate Registration</Link>
+                    </li>
                   </>
                 )}
-                <li><Link to="/placement-portal">Placement Officer Portal</Link></li>
-                <li><Link to="/admin">Admin Workspace</Link></li>
+                <li>
+                  <Link to="/placement-portal">Placement Officer Portal</Link>
+                </li>
+                <li>
+                  <Link to="/admin">Admin Workspace</Link>
+                </li>
               </ul>
             </div>
 
-            {/* Links Col 3: Resources & Trust */}
+            {/* Links Col 3: System & Policies */}
             <div className="saas-footer-links-col">
               <h4>System & Policies</h4>
               <ul>
@@ -682,11 +941,11 @@ export function LandingPage() {
           <div className="saas-footer-bottom">
             <p>© {new Date().getFullYear()} HireVerse. All rights reserved.</p>
             <div className="saas-footer-bottom-links">
-              <span>MERN Stack Platform</span>
+              <span>MERN Stack Architecture</span>
               <em>·</em>
-              <span>Deterministic Readiness Engine</span>
+              <span>Server-Governed Assessments</span>
               <em>·</em>
-              <span>Verified Campus Hiring Solutions</span>
+              <span>Verified Career & Hiring Solutions</span>
             </div>
           </div>
         </div>
@@ -714,19 +973,19 @@ export function LandingPage() {
             <div className="saas-modal-body">
               {legalModal === 'privacy' && (
                 <>
-                  <p><strong>Your Privacy is Guaranteed:</strong> HireVerse respects student confidentiality. We store academic profile data (branch, graduation year, CGPA) strictly for placement preparation, mock assessment benchmarks, and campus placement drive eligibility.</p>
-                  <p>Passwords are hashed using bcrypt before database storage, and authentication tokens use industry-standard JSON Web Tokens (JWT). Student records are accessible only to authorized college placement administrators and the individual student.</p>
+                  <p><strong>Your Privacy is Respected:</strong> HireVerse stores candidate academic profile data (branch, graduation year, target company) strictly for interview preparation, mock assessment benchmarks, and recruitment eligibility.</p>
+                  <p>Passwords are securely hashed using bcrypt before database storage, and authentication sessions use industry-standard JSON Web Tokens (JWT). Profile records are accessible only to authorized placement administrators and the individual candidate.</p>
                 </>
               )}
               {legalModal === 'terms' && (
                 <>
-                  <p><strong>Platform Usage Standards:</strong> HireVerse is provided for engineering students, faculty mentors, and college placement coordinators. All mock assessment questions, roadmap milestones, and readiness scoring logic are intended for educational and recruitment preparation purposes.</p>
-                  <p>Students agree to uphold academic honesty during timed mock assessments and campus drive applications.</p>
+                  <p><strong>Platform Usage Standards:</strong> HireVerse is designed for students, graduates, job seekers, faculty mentors, and college placement coordinators. All mock assessment questions, roadmap milestones, and readiness scoring logic are intended for educational and career preparation purposes.</p>
+                  <p>Candidates agree to uphold academic honesty during timed mock assessments and hiring preparation.</p>
                 </>
               )}
               {legalModal === 'security' && (
                 <>
-                  <p><strong>Server-Governed Evaluation:</strong> HireVerse executes all mock test grading and score calculations server-side with deterministic algorithms and strict timers to prevent client-side answer tampering.</p>
+                  <p><strong>Server-Governed Evaluation:</strong> HireVerse executes mock test grading and score calculations server-side with strict timers to prevent client-side answer tampering.</p>
                   <p>All database transactions are securely managed via MongoDB Atlas cloud clusters with encrypted connections and role-based access control.</p>
                 </>
               )}

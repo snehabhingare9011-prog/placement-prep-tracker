@@ -1,11 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle } from 'lucide-react'
 import { Modal } from '../common/Modal'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/client'
 
 export function ProfileModal({ close }) {
-  const { user, refreshUser, showToast } = useAuth()
-  const [tab, setTab] = useState('profile') // 'profile' | 'security'
+  const { user, refreshUser, deleteAccount, showToast } = useAuth()
+  const navigate = useNavigate()
+  const [tab, setTab] = useState('profile') // 'profile' | 'security' | 'delete'
 
   // Profile Form state
   const [name, setName] = useState(user?.name || '')
@@ -22,6 +25,12 @@ export function ProfileModal({ close }) {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSaving, setPasswordSaving] = useState(false)
+
+  // Delete account state
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault()
@@ -77,22 +86,53 @@ export function ProfileModal({ close }) {
     }
   }
 
+  const handleDeleteAccountSubmit = async (e) => {
+    e.preventDefault()
+    if (!deletePassword) {
+      setDeleteError('Please enter your password to confirm deletion.')
+      return
+    }
+    if (deleteConfirmText !== 'DELETE') {
+      setDeleteError('Please type DELETE in capital letters to confirm.')
+      return
+    }
+    setDeleteError('')
+    setIsDeleting(true)
+    try {
+      await deleteAccount(deletePassword)
+      close()
+      navigate('/')
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete account. Please verify your password.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <Modal title="Account Profile & Settings" close={close} maxWidth="600px">
       <div className="modal-tabs">
         <button
           type="button"
           className={`modal-tab ${tab === 'profile' ? 'active' : ''}`}
-          onClick={() => setTab('profile')}
+          onClick={() => { setTab('profile'); setDeleteError('') }}
         >
           Academic Details
         </button>
         <button
           type="button"
           className={`modal-tab ${tab === 'security' ? 'active' : ''}`}
-          onClick={() => setTab('security')}
+          onClick={() => { setTab('security'); setDeleteError('') }}
         >
           Security & Password
+        </button>
+        <button
+          type="button"
+          className={`modal-tab ${tab === 'delete' ? 'active' : ''}`}
+          style={tab === 'delete' ? { color: '#c63e3e', borderColor: '#c63e3e' } : { color: '#c63e3e' }}
+          onClick={() => { setTab('delete'); setDeleteError('') }}
+        >
+          Delete Account
         </button>
       </div>
 
@@ -202,7 +242,7 @@ export function ProfileModal({ close }) {
             </button>
           </div>
         </form>
-      ) : (
+      ) : tab === 'security' ? (
         <form onSubmit={handlePasswordSubmit} className="modal-form-fields">
           <label className="field-label">
             Current Password
@@ -249,6 +289,78 @@ export function ProfileModal({ close }) {
             </button>
             <button type="submit" className="button" disabled={passwordSaving}>
               {passwordSaving ? 'Updating...' : 'Update Password'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handleDeleteAccountSubmit} className="modal-form-fields">
+          <div style={{
+            background: '#fff5f5',
+            border: '1px solid #ffd4d4',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#c63e3e', fontWeight: 700, marginBottom: '8px' }}>
+              <AlertTriangle size={18} />
+              <span>Danger Zone: Permanent Account Deletion</span>
+            </div>
+            <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#555', lineHeight: 1.5 }}>
+              Deleting your account is <strong>permanent and irreversible</strong>. All your associated records will be immediately and completely erased:
+            </p>
+            <ul style={{ margin: '0', paddingLeft: '20px', fontSize: '12px', color: '#666', lineHeight: 1.6 }}>
+              <li>User profile, academic credentials, and active login sessions</li>
+              <li>All test attempts, mock exam scores, and performance history</li>
+              <li>Personalized roadmap progress and completed syllabus topics</li>
+              <li>Saved practice questions, notes, and activity history</li>
+              <li>Placement drive applications</li>
+            </ul>
+          </div>
+
+          {deleteError && (
+            <div className="auth-alert danger" style={{ marginBottom: '16px' }}>
+              {deleteError}
+            </div>
+          )}
+
+          <label className="field-label">
+            <span>To confirm deletion, please enter your account password:</span>
+            <input
+              type="password"
+              required
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder="Enter your current password"
+              autoFocus
+            />
+          </label>
+
+          <label className="field-label">
+            <span>Type <strong>DELETE</strong> to confirm:</span>
+            <input
+              type="text"
+              required
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type DELETE"
+            />
+          </label>
+
+          <div className="modal-actions" style={{ justifyContent: 'space-between', marginTop: '20px' }}>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => { setTab('profile'); setDeleteError(''); setDeletePassword(''); setDeleteConfirmText('') }}
+              disabled={isDeleting}
+            >
+              Keep My Account
+            </button>
+            <button
+              type="submit"
+              className="button danger"
+              disabled={isDeleting || !deletePassword || deleteConfirmText !== 'DELETE'}
+            >
+              {isDeleting ? 'Deleting Account...' : 'Permanently Delete Account'}
             </button>
           </div>
         </form>

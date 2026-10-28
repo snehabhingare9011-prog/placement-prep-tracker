@@ -162,6 +162,21 @@ export async function createOrRegenerateRoadmap(req, res, next) {
   }
 }
 
+export function isPhaseCompleted(phase) {
+  const tasks = phase?.tasks || []
+  return tasks.length > 0 && tasks.every(t => t.completed)
+}
+
+export function isPhaseUnlocked(phaseIndex, phases) {
+  if (phaseIndex === 0) return true
+  for (let k = 0; k < phaseIndex; k++) {
+    if (!isPhaseCompleted(phases[k])) {
+      return false
+    }
+  }
+  return true
+}
+
 // @desc Toggle roadmap task completion
 // @route PATCH /api/v1/roadmaps/:id/tasks/:taskId
 // @access Private
@@ -178,6 +193,30 @@ export async function toggleTaskComplete(req, res, next) {
     }
 
     const { taskId } = req.params
+
+    // 1. Locate all phases containing this task
+    const containingPhases = []
+    roadmap.phases.forEach((phase, idx) => {
+      if (phase.tasks.some(t => t.taskId === taskId)) {
+        containingPhases.push({ phase, idx })
+      }
+    })
+
+    if (containingPhases.length === 0) {
+      return res.status(404).json({ success: false, message: 'Task not found in roadmap.' })
+    }
+
+    // 2. Sequential Round Unlocking Enforcement:
+    // Topics can only be marked or unmarked if their round is unlocked
+    const isAnyPhaseUnlocked = containingPhases.some(({ idx }) => isPhaseUnlocked(idx, roadmap.phases))
+    if (!isAnyPhaseUnlocked) {
+      const lockedStageNums = containingPhases.map(({ idx }) => idx + 1).join(', ')
+      return res.status(400).json({
+        success: false,
+        message: `Cannot update topic. Stage ${lockedStageNums} is locked. Complete all required topics in prerequisite stages first.`
+      })
+    }
+
     const user = await User.findById(req.user._id)
     const companyId = roadmap.company?.toString()
     const role = roadmap.role

@@ -1,12 +1,48 @@
 /* ==========================================================================
-   HireVerse Modern Premium Homepage Styles
-   A modern, clean, student-focused placement platform aesthetic
+   HireVerse Premium SaaS Landing Page Styles
+   Design Tokens:
+   - Midnight Navy:       #101828
+   - Electric Royal Blue: #365CF5
+   - Soft Indigo:         #818CF8
+   - Pale Lavender:       #F0EEFF
+   - Cool Off-White:      #F7F9FC
+   - Pure White:          #FFFFFF
+   - Slate:               #667085
+   - Mist Gray:           #E4E9F1
+   - Success Green:       #16A36A
    ========================================================================== */
 
+:root {
+  --hv-navy: #101828;
+  --hv-navy-subtle: #1E293B;
+  --hv-blue: #365CF5;
+  --hv-blue-hover: #2747D9;
+  --hv-blue-tint: rgba(54, 92, 245, 0.08);
+  --hv-indigo: #818CF8;
+  --hv-lavender: #F0EEFF;
+  --hv-offwhite: #F7F9FC;
+  --hv-white: #FFFFFF;
+  --hv-slate: #667085;
+  --hv-slate-dark: #344054;
+  --hv-mist: #E4E9F1;
+  --hv-mist-light: #F2F4F7;
+  --hv-green: #16A36A;
+  --hv-green-bg: #ECFDF3;
+  --hv-radius-sm: 8px;
+  --hv-radius-md: 12px;
+  --hv-radius-lg: 16px;
+  --hv-radius-xl: 20px;
+  --hv-shadow-subtle: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03);
+  --hv-shadow-card: 0 4px 20px -2px rgba(16, 24, 40, 0.05), 0 2px 6px -1px rgba(16, 24, 40, 0.03);
+  --hv-shadow-elevated: 0 20px 40px -8px rgba(16, 24, 40, 0.08), 0 1px 3px rgba(16, 24, 40, 0.04);
+  --hv-shadow-floating: 0 24px 48px -12px rgba(16, 24, 40, 0.14), 0 4px 12px rgba(16, 24, 40, 0.04);
+}
+
+/* Base Wrapper */
 .saas-landing {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #334155;
-  background-color: #ffffff;
+  color: var(--hv-slate-dark);
+  background-color: var(--hv-white);
   min-height: 100vh;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -15,34 +51,70 @@
   position: relative;
 }
 
-/* Max Container Width */
+/* Layout Container */
 .saas-container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 28px;
+}
+
+.saas-container-narrow {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* Smooth scrolling & section offset for fixed navigation */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+#hero,
+#features,
+#overview,
+#workflow,
+#faq {
+  scroll-margin-top: 84px;
 }
 
 /* ==========================================================================
-   1. Professional Navbar
+   1. Premium Navbar (Fixed & Always Visible)
    ========================================================================== */
 
 .saas-navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 100;
-  height: 72px;
-  background: rgba(255, 255, 255, 0.88);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
+  height: 74px;
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
-  transition: all 0.25s ease;
+  border-bottom: 1px solid var(--hv-mist);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.saas-navbar.is-scrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 20px -2px rgba(16, 24, 40, 0.08);
+  border-bottom-color: rgba(228, 233, 241, 0.95);
+}
+
+.saas-main-content {
+  padding-top: 74px;
 }
 
 .saas-nav-container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 28px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -50,34 +122,31 @@
   gap: 24px;
 }
 
-/* Brand */
+/* Brand Wordmark */
 .saas-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   text-decoration: none;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .saas-brand:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
+  opacity: 0.92;
 }
 
 .saas-brand-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--hv-navy);
   display: grid;
   place-items: center;
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 19px;
-  font-family: 'Manrope', 'Inter', sans-serif;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: var(--hv-white);
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .saas-brand-text {
@@ -86,77 +155,107 @@
 }
 
 .saas-brand-text strong {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.03em;
+  color: var(--hv-navy);
+  letter-spacing: -0.035em;
   font-family: 'Manrope', 'Inter', sans-serif;
   line-height: 1.15;
 }
 
 .saas-brand-text strong span {
-  color: #2563eb;
+  color: var(--hv-blue);
 }
 
 .saas-brand-text small {
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: var(--hv-slate);
   text-transform: uppercase;
   margin-top: 1px;
 }
 
-/* Center Nav Links */
+/* Navigation Links */
 .saas-nav-menu {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .saas-nav-menu a {
   text-decoration: none;
-  color: #475569;
+  color: var(--hv-slate);
   font-size: 14px;
   font-weight: 500;
   padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.18s ease;
+  border-radius: var(--hv-radius-sm);
+  transition: color 0.18s ease, background-color 0.18s ease;
   position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-.saas-nav-menu a:hover {
-  color: #1d4ed8;
-  background: rgba(37, 99, 235, 0.06);
+.saas-nav-menu a:hover:not(.is-active) {
+  color: var(--hv-navy);
+  background: var(--hv-mist-light);
+}
+
+.saas-nav-menu a.is-active {
+  color: var(--hv-blue);
+  font-weight: 600;
+  background: var(--hv-blue-tint);
+}
+
+.saas-nav-menu a.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--hv-blue);
+  border-radius: 2px;
+}
+
+.saas-nav-menu a:focus-visible {
+  outline: 2px solid var(--hv-blue);
+  outline-offset: 2px;
 }
 
 /* Right Actions */
 .saas-nav-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-/* Professional SaaS Buttons */
+/* SaaS Button System */
 .saas-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 9px 18px;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 9px;
+  border-radius: var(--hv-radius-sm);
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid transparent;
   white-space: nowrap;
   line-height: 1.35;
+  font-family: 'Inter', sans-serif;
+}
+
+.saas-btn:focus-visible {
+  outline: 2px solid var(--hv-blue);
+  outline-offset: 2px;
 }
 
 .saas-btn svg {
-  transition: transform 0.2s ease;
+  transition: transform 0.18s ease;
 }
 
 .saas-btn:hover svg {
@@ -164,17 +263,17 @@
 }
 
 .saas-btn-primary {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  border-color: #1d4ed8;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 4px 12px 0 rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: var(--hv-blue);
+  color: var(--hv-white);
+  border-color: var(--hv-blue);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 12px rgba(54, 92, 245, 0.22);
 }
 
 .saas-btn-primary:hover {
-  background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
-  border-color: #1e40af;
-  transform: translateY(-1.5px);
-  box-shadow: 0 6px 18px 0 rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: var(--hv-blue-hover);
+  border-color: var(--hv-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(54, 92, 245, 0.32);
 }
 
 .saas-btn-primary:active {
@@ -182,68 +281,68 @@
 }
 
 .saas-btn-secondary {
-  background: #ffffff;
-  color: #334155;
-  border-color: #cbd5e1;
-  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  background: var(--hv-white);
+  color: var(--hv-navy);
+  border-color: var(--hv-mist);
+  box-shadow: var(--hv-shadow-subtle);
 }
 
 .saas-btn-secondary:hover {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: #94a3b8;
+  background: var(--hv-mist-light);
+  border-color: #D0D5DD;
+  color: var(--hv-navy);
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px 0 rgba(15, 23, 42, 0.08);
+}
+
+.saas-btn-secondary:active {
+  transform: translateY(0);
 }
 
 .saas-btn-outline {
-  background: #ffffff;
-  color: #334155;
-  border-color: #cbd5e1;
-  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  background: var(--hv-white);
+  color: var(--hv-navy);
+  border-color: var(--hv-mist);
 }
 
 .saas-btn-outline:hover {
-  background: #f8fafc;
-  border-color: #2563eb;
-  color: #2563eb;
-  transform: translateY(-1.5px);
-  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.15);
+  border-color: var(--hv-blue);
+  color: var(--hv-blue);
+  background: var(--hv-blue-tint);
+  transform: translateY(-1px);
 }
 
 .saas-btn-white {
-  background: #ffffff;
-  color: #1e3a8a;
-  border-color: #ffffff;
+  background: var(--hv-white);
+  color: var(--hv-navy);
+  border-color: var(--hv-white);
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .saas-btn-white:hover {
-  background: #f8fafc;
-  color: #1d4ed8;
-  transform: translateY(-2px);
+  background: var(--hv-offwhite);
+  color: var(--hv-blue);
+  transform: translateY(-1.5px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
 .saas-btn-translucent {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--hv-white);
+  border-color: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(8px);
 }
 
 .saas-btn-translucent:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.45);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1.5px);
 }
 
 .saas-btn-lg {
-  padding: 12px 26px;
+  padding: 12px 24px;
   font-size: 15px;
   border-radius: 10px;
-  font-weight: 600;
 }
 
 .saas-btn-block {
@@ -254,389 +353,761 @@
 .saas-mobile-toggle {
   display: none;
   background: transparent;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-sm);
   padding: 8px;
-  color: #334155;
+  color: var(--hv-navy);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .saas-mobile-toggle:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--hv-mist-light);
 }
 
 /* Mobile Drawer Menu */
 .saas-mobile-menu {
   display: none;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 20px 24px 28px;
-  box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.1);
+  position: absolute;
+  top: 74px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: var(--hv-white);
+  border-bottom: 1px solid var(--hv-mist);
+  padding: 18px 24px 24px;
+  box-shadow: var(--hv-shadow-elevated);
+  max-height: calc(100vh - 74px);
+  overflow-y: auto;
 }
 
 .saas-mobile-links {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 22px;
+  gap: 4px;
+  margin-bottom: 20px;
 }
 
 .saas-mobile-links a {
   text-decoration: none;
-  color: #334155;
+  color: var(--hv-navy);
   font-size: 15px;
   font-weight: 600;
-  padding: 8px 0;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 10px 14px;
+  border-radius: var(--hv-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.saas-mobile-links a:hover {
+  background: var(--hv-mist-light);
+}
+
+.saas-mobile-links a.is-active {
+  color: var(--hv-blue);
+  background: var(--hv-blue-tint);
+  border-left: 3px solid var(--hv-blue);
+  border-radius: 0 var(--hv-radius-sm) var(--hv-radius-sm) 0;
+}
+
+.mobile-active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hv-blue);
 }
 
 .saas-mobile-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hv-mist);
 }
 
 /* ==========================================================================
-   2. Modern Hero Section
+   2. Exceptional Hero Section (Two-Column Layout)
    ========================================================================== */
 
 .saas-hero-section {
-  padding: 92px 0 88px;
-  background-color: #ffffff;
+  padding: 42px 0 36px;
+  background-color: var(--hv-offwhite);
   background-image: 
-    radial-gradient(circle at 50% -15%, rgba(37, 99, 235, 0.14) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 75%),
-    radial-gradient(circle at 10% 25%, rgba(219, 234, 254, 0.5) 0%, transparent 45%),
-    radial-gradient(circle at 90% 25%, rgba(224, 231, 255, 0.5) 0%, transparent 45%),
-    radial-gradient(circle, rgba(37, 99, 235, 0.08) 1.2px, transparent 1.2px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 30px 30px;
+    radial-gradient(ellipse at 85% -10%, rgba(129, 140, 248, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 15% 15%, rgba(54, 92, 245, 0.06) 0%, transparent 50%),
+    linear-gradient(to bottom, #FFFFFF 0%, #F7F9FC 100%);
   position: relative;
-  overflow: hidden;
-  border-bottom: 1px solid #e2e8f0;
+  overflow: clip;
+  border-bottom: 1px solid var(--hv-mist);
 }
 
-.saas-hero-content {
-  text-align: center;
-  max-width: 900px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 2;
+.saas-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.08fr;
+  gap: 36px;
+  align-items: center;
 }
 
-/* Floating Eyebrow Pill */
-.saas-pill {
+/* Left Column: Hero Content */
+.saas-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.saas-hero-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
-  border: 1px solid #bfdbfe;
-  color: #1d4ed8;
-  padding: 6px 16px;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hv-blue);
+  background: var(--hv-lavender);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  padding: 4px 11px;
   border-radius: 9999px;
-  font-size: 12.5px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px -2px rgba(37, 99, 235, 0.12);
-  transition: all 0.25s ease;
+  margin-bottom: 14px;
 }
 
-.saas-pill:hover {
-  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-  border-color: #93c5fd;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.2);
+.saas-hero-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hv-blue);
+  box-shadow: 0 0 0 2px rgba(54, 92, 245, 0.2);
 }
 
-.saas-pill-sparkle {
-  color: #2563eb;
-  animation: sparkle-pulse 2s infinite ease-in-out;
-}
-
-@keyframes sparkle-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.18); opacity: 1; }
-}
-
-/* Main Heading */
 .saas-hero-title {
-  font-size: 54px;
+  font-size: clamp(32px, 3.2vw, 44px);
   font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.038em;
-  line-height: 1.12;
-  margin: 0 auto 20px;
-  max-width: 840px;
+  color: var(--hv-navy);
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  margin: 0 0 14px;
   font-family: 'Manrope', 'Inter', sans-serif;
   text-wrap: balance;
 }
 
-.saas-hero-gradient-text {
-  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
+.saas-hero-title .highlight {
+  color: var(--hv-blue);
 }
 
-/* Supporting Subtitle */
 .saas-hero-subtitle {
-  font-size: 18px;
-  color: #475569;
-  line-height: 1.65;
-  max-width: 660px;
-  margin: 0 auto 36px;
-  text-wrap: balance;
+  font-size: clamp(14.5px, 1.1vw, 16px);
+  color: var(--hv-slate);
+  line-height: 1.6;
+  margin: 0 0 20px;
+  max-width: 500px;
   font-weight: 400;
 }
 
-/* Hero Action Buttons */
 .saas-hero-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin-bottom: 18px;
 }
 
-/* Trust Proof Pill Bar */
-.saas-hero-proof {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  row-gap: 12px;
-  flex-wrap: wrap;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: 9999px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.02);
-}
-
-.saas-proof-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
+.saas-hero-support-line {
+  font-size: 12px;
   font-weight: 600;
-  color: #334155;
-  white-space: nowrap;
+  color: var(--hv-slate);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
-.saas-proof-item svg {
-  color: #059669;
-  background: #ecfdf5;
+/* Right Column: Layered Product Showcase */
+.saas-hero-visual {
+  position: relative;
+  perspective: 1200px;
+}
+
+/* Background Decorative Geometry */
+.mockup-deco-shape {
+  position: absolute;
   border-radius: 50%;
-  padding: 2.5px;
-  width: 19px;
-  height: 19px;
-  box-shadow: 0 0 0 2px #d1fae5;
+  pointer-events: none;
+  filter: blur(45px);
+  z-index: 0;
+}
+
+.mockup-deco-shape-1 {
+  width: 280px;
+  height: 280px;
+  top: -30px;
+  right: -20px;
+  background: var(--hv-lavender);
+  opacity: 0.8;
+}
+
+.mockup-deco-shape-2 {
+  width: 220px;
+  height: 220px;
+  bottom: -20px;
+  left: -20px;
+  background: rgba(129, 140, 248, 0.15);
+  opacity: 0.6;
+}
+
+/* Main Preview Panel (Application Window Style) */
+.saas-product-mockup {
+  position: relative;
+  z-index: 1;
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-lg);
+  box-shadow: var(--hv-shadow-floating);
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.saas-product-mockup:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 28px 56px -12px rgba(16, 24, 40, 0.16);
+}
+
+/* Window Header Bar */
+.mockup-header {
+  height: 38px;
+  background: #FBFBFD;
+  border-bottom: 1px solid var(--hv-mist);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mockup-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mockup-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.mockup-dot-red { background: #FF5F56; }
+.mockup-dot-yellow { background: #FFBD2E; }
+.mockup-dot-green { background: #27C93F; }
+
+.mockup-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hv-slate);
+}
+
+.mockup-titlebar-tag {
+  background: var(--hv-mist);
+  color: var(--hv-slate-dark);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.mockup-header-action {
+  font-size: 10.5px;
+  color: var(--hv-slate);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Mockup Body Content */
+.mockup-body {
+  padding: 14px 16px;
+  background: var(--hv-white);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Target Company Card */
+.mockup-target-card {
+  background: var(--hv-offwhite);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mockup-target-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mockup-company-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--hv-navy);
+  color: var(--hv-white);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
+.mockup-target-titles strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hv-navy);
+  line-height: 1.25;
+}
+
+.mockup-target-titles span {
+  font-size: 11px;
+  color: var(--hv-slate);
+}
+
+.mockup-target-badge {
+  background: var(--hv-lavender);
+  color: var(--hv-blue);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* Split Metrics Row */
+.mockup-metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mockup-metric-card {
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-sm);
+  padding: 10px 12px;
+  background: var(--hv-white);
+}
+
+.mockup-metric-card.accent {
+  background: #FAFAFE;
+  border-color: #E0E3FA;
+}
+
+.mockup-metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.mockup-metric-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hv-slate);
+}
+
+.mockup-metric-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--hv-green);
+  background: var(--hv-green-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mockup-metric-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--hv-navy);
+  font-family: 'Manrope', 'Inter', sans-serif;
+  line-height: 1.2;
+}
+
+.mockup-metric-sub {
+  font-size: 11px;
+  color: var(--hv-slate);
+  margin-top: 2px;
+}
+
+/* Progress bar inside metric */
+.mockup-progress-track {
+  height: 5px;
+  background: var(--hv-mist);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.mockup-progress-fill {
+  height: 100%;
+  background: var(--hv-blue);
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+/* Roadmap Compact Preview */
+.mockup-roadmap-preview {
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-sm);
+  padding: 10px 12px;
+  background: var(--hv-white);
+}
+
+.mockup-roadmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mockup-roadmap-header span {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hv-slate);
+}
+
+.mockup-roadmap-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mockup-roadmap-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--hv-offwhite);
+  border-radius: var(--hv-radius-sm);
+  font-size: 11.5px;
+  border: 1px solid transparent;
+}
+
+.mockup-roadmap-item.completed {
+  border-color: rgba(22, 163, 106, 0.2);
+  background: #F4FBF7;
+}
+
+.mockup-roadmap-item.active {
+  border-color: rgba(54, 92, 245, 0.25);
+  background: #F7F9FF;
+}
+
+.mockup-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--hv-navy);
+}
+
+.mockup-item-status {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mockup-item-status.done {
+  color: var(--hv-green);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mockup-item-status.progress {
+  color: var(--hv-blue);
+}
+
+.mockup-item-status.next {
+  color: var(--hv-slate);
+}
+
+/* Secondary Floating Elements */
+.mockup-floating-badge {
+  position: absolute;
+  bottom: -10px;
+  left: -10px;
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--hv-shadow-floating);
+  z-index: 3;
+  animation: float-subtle 4s ease-in-out infinite;
+  max-width: calc(100% - 20px);
+}
+
+.mockup-floating-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--hv-green-bg);
+  color: var(--hv-green);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.mockup-floating-text strong {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--hv-navy);
+}
+
+.mockup-floating-text span {
+  font-size: 10.5px;
+  color: var(--hv-slate);
+}
+
+.mockup-floating-pill {
+  position: absolute;
+  top: 24px;
+  right: -8px;
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: 9999px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: var(--hv-shadow-elevated);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--hv-navy);
+  z-index: 3;
+}
+
+.mockup-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hv-blue);
+  box-shadow: 0 0 0 2px rgba(54, 92, 245, 0.2);
+}
+
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
 /* ==========================================================================
-   3. Platform Capabilities Section
+   3. Restrained High-Quality Value Strip
+   ========================================================================== */
+
+.saas-value-strip {
+  background: var(--hv-white);
+  border-bottom: 1px solid var(--hv-mist);
+  padding: 16px 0;
+}
+
+.saas-value-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.saas-value-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: var(--hv-radius-sm);
+  transition: all 0.16s ease;
+  position: relative;
+}
+
+.saas-value-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: var(--hv-mist);
+}
+
+.saas-value-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--hv-radius-sm);
+  background: var(--hv-offwhite);
+  border: 1px solid var(--hv-mist);
+  color: var(--hv-blue);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.saas-value-item:hover .saas-value-icon {
+  background: var(--hv-lavender);
+  border-color: rgba(129, 140, 248, 0.3);
+  color: var(--hv-blue);
+}
+
+.saas-value-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--hv-navy);
+  line-height: 1.3;
+}
+
+/* ==========================================================================
+   4. Premium Features Section
    ========================================================================== */
 
 .saas-section {
-  padding: 88px 0;
+  padding: 56px 0;
   position: relative;
 }
 
 .saas-section-header {
   text-align: center;
-  max-width: 680px;
-  margin: 0 auto 56px;
+  max-width: 660px;
+  margin: 0 auto 36px;
 }
 
 .saas-section-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  padding: 4px 12px;
+  color: var(--hv-blue);
+  background: var(--hv-lavender);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  padding: 3px 10px;
   border-radius: 9999px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .saas-section-title {
-  font-size: 38px;
+  font-size: clamp(26px, 2.4vw, 34px);
   font-weight: 800;
-  color: #0f172a;
+  color: var(--hv-navy);
   letter-spacing: -0.03em;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   line-height: 1.2;
   font-family: 'Manrope', 'Inter', sans-serif;
   text-wrap: balance;
 }
 
 .saas-section-description {
-  font-size: 16.5px;
-  color: #64748b;
-  line-height: 1.65;
+  font-size: 15px;
+  color: var(--hv-slate);
+  line-height: 1.6;
   margin: 0;
   text-wrap: balance;
 }
 
 /* Features Grid */
 .saas-features-section {
-  background: #ffffff;
+  background: var(--hv-offwhite);
+  border-bottom: 1px solid var(--hv-mist);
 }
 
 .saas-features-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 22px;
+  gap: 18px;
 }
 
 .saas-feature-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 32px 24px;
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-md);
+  padding: 22px 18px;
   display: flex;
   flex-direction: column;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 16px -4px rgba(15, 23, 42, 0.02);
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--hv-shadow-subtle);
   position: relative;
-  overflow: hidden;
-}
-
-.saas-feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: transparent;
-  transition: background 0.25s ease;
 }
 
 .saas-feature-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px);
+  border-color: #CBD5E1;
+  box-shadow: var(--hv-shadow-card);
 }
 
-/* Card 1: Blue theme */
-.saas-feature-card:nth-child(1) .saas-feature-icon-wrap {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  color: #2563eb;
-  border-color: #bfdbfe;
-}
-.saas-feature-card:nth-child(1) .saas-feature-tag {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-.saas-feature-card:nth-child(1):hover {
-  border-color: #bfdbfe;
-  box-shadow: 0 16px 32px -8px rgba(37, 99, 235, 0.12), 0 0 0 1px rgba(37, 99, 235, 0.08);
-}
-.saas-feature-card:nth-child(1):hover::before {
-  background: #2563eb;
+/* Featured Card Accent */
+.saas-feature-card.is-featured {
+  background: #F8F7FF;
+  border-color: #D9D7FA;
+  box-shadow: 0 4px 20px -2px rgba(129, 140, 248, 0.12);
 }
 
-/* Card 2: Indigo theme */
-.saas-feature-card:nth-child(2) .saas-feature-icon-wrap {
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  color: #4f46e5;
-  border-color: #c7d2fe;
-}
-.saas-feature-card:nth-child(2) .saas-feature-tag {
-  background: #eef2ff;
-  color: #4338ca;
-  border-color: #c7d2fe;
-}
-.saas-feature-card:nth-child(2):hover {
-  border-color: #c7d2fe;
-  box-shadow: 0 16px 32px -8px rgba(79, 70, 229, 0.12), 0 0 0 1px rgba(79, 70, 229, 0.08);
-}
-.saas-feature-card:nth-child(2):hover::before {
-  background: #4f46e5;
+.saas-feature-card.is-featured:hover {
+  border-color: var(--hv-indigo);
 }
 
-/* Card 3: Emerald theme */
-.saas-feature-card:nth-child(3) .saas-feature-icon-wrap {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #059669;
-  border-color: #a7f3d0;
-}
-.saas-feature-card:nth-child(3) .saas-feature-tag {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
-}
-.saas-feature-card:nth-child(3):hover {
-  border-color: #a7f3d0;
-  box-shadow: 0 16px 32px -8px rgba(5, 150, 105, 0.12), 0 0 0 1px rgba(5, 150, 105, 0.08);
-}
-.saas-feature-card:nth-child(3):hover::before {
-  background: #059669;
-}
-
-/* Card 4: Purple theme */
-.saas-feature-card:nth-child(4) .saas-feature-icon-wrap {
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  color: #7c3aed;
-  border-color: #ddd6fe;
-}
-.saas-feature-card:nth-child(4) .saas-feature-tag {
-  background: #faf5ff;
-  color: #6d28d9;
-  border-color: #ddd6fe;
-}
-.saas-feature-card:nth-child(4):hover {
-  border-color: #ddd6fe;
-  box-shadow: 0 16px 32px -8px rgba(124, 58, 237, 0.12), 0 0 0 1px rgba(124, 58, 237, 0.08);
-}
-.saas-feature-card:nth-child(4):hover::before {
-  background: #7c3aed;
-}
-
-.saas-feature-icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+.saas-feature-icon-container {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--hv-radius-sm);
+  background: var(--hv-offwhite);
+  border: 1px solid var(--hv-mist);
+  color: var(--hv-navy);
   display: grid;
   place-items: center;
-  margin-bottom: 20px;
-  border: 1px solid transparent;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-  transition: transform 0.25s ease;
-}
-
-.saas-feature-card:hover .saas-feature-icon-wrap {
-  transform: scale(1.08);
-}
-
-.saas-feature-tag {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 6px;
-  align-self: flex-start;
   margin-bottom: 14px;
-  border: 1px solid transparent;
-  letter-spacing: 0.02em;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.saas-feature-card:hover .saas-feature-icon-container {
+  transform: scale(1.05);
+  color: var(--hv-blue);
+  background: var(--hv-lavender);
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.saas-feature-card.is-featured .saas-feature-icon-container {
+  background: var(--hv-white);
+  border-color: #D9D7FA;
+  color: var(--hv-blue);
+}
+
+.saas-feature-number {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--hv-slate);
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
 }
 
 .saas-feature-card h3 {
-  font-size: 18px;
+  font-size: 16.5px;
   font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 10px;
+  color: var(--hv-navy);
+  margin: 0 0 8px;
   font-family: 'Manrope', 'Inter', sans-serif;
   letter-spacing: -0.015em;
   line-height: 1.3;
@@ -644,252 +1115,397 @@
 
 .saas-feature-card p {
   font-size: 13.5px;
-  line-height: 1.65;
-  color: #64748b;
+  line-height: 1.55;
+  color: var(--hv-slate);
   margin: 0;
 }
 
 /* ==========================================================================
-   4. How It Works Section
+   5. Visual Product-Explanation Section (Editorial Split)
+   ========================================================================== */
+
+.saas-explain-section {
+  background: var(--hv-white);
+  border-bottom: 1px solid var(--hv-mist);
+}
+
+.saas-explain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.saas-explain-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.saas-explain-heading {
+  font-size: clamp(26px, 2.4vw, 34px);
+  font-weight: 800;
+  color: var(--hv-navy);
+  letter-spacing: -0.03em;
+  margin: 0 0 14px;
+  line-height: 1.2;
+  font-family: 'Manrope', 'Inter', sans-serif;
+}
+
+.saas-explain-lead {
+  font-size: 15px;
+  color: var(--hv-slate);
+  line-height: 1.6;
+  margin: 0 0 22px;
+}
+
+.saas-explain-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.saas-benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.saas-benefit-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--hv-green-bg);
+  color: var(--hv-green);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.saas-benefit-text strong {
+  display: inline;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hv-navy);
+}
+
+.saas-benefit-text span {
+  display: inline;
+  font-size: 13.5px;
+  color: var(--hv-slate);
+  margin-left: 4px;
+}
+
+/* Right Column: Editorial Product Preview */
+.saas-explain-preview {
+  position: relative;
+}
+
+.explain-preview-card {
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-md);
+  box-shadow: var(--hv-shadow-card);
+  overflow: hidden;
+}
+
+.explain-preview-head {
+  padding: 12px 16px;
+  background: var(--hv-offwhite);
+  border-bottom: 1px solid var(--hv-mist);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.explain-preview-company {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.explain-preview-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--hv-navy);
+  color: var(--hv-white);
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+}
+
+.explain-preview-company-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--hv-navy);
+}
+
+.explain-preview-company-role {
+  font-size: 11.5px;
+  color: var(--hv-slate);
+}
+
+.explain-preview-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.explain-tab-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.explain-tab-pill.active {
+  background: var(--hv-white);
+  color: var(--hv-navy);
+  border-color: var(--hv-mist);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.explain-tab-pill.inactive {
+  color: var(--hv-slate);
+}
+
+.explain-preview-body {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.explain-topic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-sm);
+  background: var(--hv-white);
+  transition: border-color 0.15s ease;
+}
+
+.explain-topic-row:hover {
+  border-color: #CBD5E1;
+}
+
+.explain-topic-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.explain-topic-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.explain-topic-checkbox.checked {
+  background: var(--hv-green);
+  color: var(--hv-white);
+}
+
+.explain-topic-checkbox.progress {
+  border: 2px solid var(--hv-blue);
+  background: var(--hv-lavender);
+}
+
+.explain-topic-info strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--hv-navy);
+}
+
+.explain-topic-info span {
+  font-size: 11.5px;
+  color: var(--hv-slate);
+}
+
+.explain-topic-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.explain-resource-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--hv-offwhite);
+  border: 1px solid var(--hv-mist);
+  color: var(--hv-slate);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   6. Workflow Section (From Preparation to Practice)
    ========================================================================== */
 
 .saas-workflow-section {
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--hv-offwhite);
+  border-bottom: 1px solid var(--hv-mist);
 }
 
 .saas-workflow-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 26px;
-}
-
-.saas-workflow-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 36px 30px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 8px 24px -6px rgba(15, 23, 42, 0.04);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 20px;
   position: relative;
 }
 
-.saas-workflow-card:hover {
-  border-color: #cbd5e1;
-  transform: translateY(-5px);
-  box-shadow: 0 20px 36px -10px rgba(15, 23, 42, 0.09);
+/* Connecting Line */
+.saas-workflow-line {
+  position: absolute;
+  top: 42px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: var(--hv-mist);
+  z-index: 0;
 }
 
-.saas-workflow-badge {
+.saas-step-card {
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-md);
+  padding: 24px 20px;
+  box-shadow: var(--hv-shadow-subtle);
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.saas-step-card:hover {
+  transform: translateY(-3px);
+  border-color: #CBD5E1;
+  box-shadow: var(--hv-shadow-card);
+}
+
+.saas-step-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 }
 
-.step-number {
-  font-size: 32px;
+.saas-step-number {
+  font-size: 24px;
   font-weight: 800;
-  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--hv-blue);
   font-family: 'Manrope', 'Inter', sans-serif;
   letter-spacing: -0.04em;
   line-height: 1;
 }
 
-.step-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #2563eb;
+.saas-step-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--hv-radius-sm);
+  background: var(--hv-lavender);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  color: var(--hv-blue);
   display: grid;
   place-items: center;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
 }
 
-.saas-workflow-card h3 {
-  font-size: 18px;
+.saas-step-card h3 {
+  font-size: 17px;
   font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 10px;
+  color: var(--hv-navy);
+  margin: 0 0 6px;
   font-family: 'Manrope', 'Inter', sans-serif;
   letter-spacing: -0.015em;
 }
 
-.saas-workflow-card p {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #64748b;
-  margin: 0;
-}
-
-/* ==========================================================================
-   5. About HireVerse Section
-   ========================================================================== */
-
-.saas-about-section {
-  background: #ffffff;
-}
-
-.saas-about-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 60px;
-  align-items: center;
-}
-
-.saas-about-heading {
-  font-size: 36px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.03em;
-  margin: 0 0 22px;
-  line-height: 1.25;
-  font-family: 'Manrope', 'Inter', sans-serif;
-}
-
-.saas-about-paragraphs {
-  display: grid;
-  gap: 16px;
-  margin-bottom: 30px;
-}
-
-.saas-about-paragraphs p {
-  font-size: 15.5px;
-  line-height: 1.7;
-  color: #475569;
-  margin: 0;
-}
-
-.saas-about-cta {
-  display: flex;
-  gap: 12px;
-}
-
-/* Right Column Principles */
-.saas-about-principles {
-  display: grid;
-  gap: 16px;
-}
-
-.saas-principle-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 20px 24px;
-  display: flex;
-  gap: 18px;
-  align-items: flex-start;
-  transition: all 0.22s ease;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-}
-
-.saas-principle-card:hover {
-  background: #ffffff;
-  border-color: #93c5fd;
-  transform: translateX(6px);
-  box-shadow: 0 10px 24px -6px rgba(37, 99, 235, 0.08);
-}
-
-.saas-principle-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  color: #2563eb;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  border: 1px solid #bfdbfe;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
-}
-
-.saas-principle-card h4 {
-  font-size: 15.5px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 4px;
-}
-
-.saas-principle-card p {
+.saas-step-card p {
   font-size: 13.5px;
-  color: #64748b;
   line-height: 1.55;
+  color: var(--hv-slate);
   margin: 0;
 }
 
 /* ==========================================================================
-   6. FAQ Section (Accordion)
+   7. Common Questions Section (FAQ)
    ========================================================================== */
 
 .saas-faq-section {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--hv-white);
+  border-bottom: 1px solid var(--hv-mist);
 }
 
 .saas-faq-accordion {
   max-width: 820px;
   margin: 0 auto;
-  display: grid;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .saas-faq-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  background: var(--hv-white);
+  border: 1px solid var(--hv-mist);
+  border-radius: var(--hv-radius-md);
   overflow: hidden;
-  transition: all 0.22s ease;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+  transition: all 0.2s ease;
 }
 
 .saas-faq-card:hover {
-  border-color: #cbd5e1;
+  border-color: #CBD5E1;
 }
 
 .saas-faq-card.open {
-  border-color: #3b82f6;
-  box-shadow: 0 8px 24px -6px rgba(37, 99, 235, 0.12), 0 0 0 1px rgba(37, 99, 235, 0.08);
+  border-color: var(--hv-blue);
+  box-shadow: 0 4px 16px -2px rgba(54, 92, 245, 0.1);
 }
 
 .saas-faq-trigger {
   width: 100%;
-  padding: 22px 26px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
   background: transparent;
   border: 0;
   cursor: pointer;
   text-align: left;
-  transition: background 0.18s ease;
+  transition: background 0.15s ease;
 }
 
 .saas-faq-card.open .saas-faq-trigger {
-  background: #f8fafc;
+  background: #FAFAFC;
 }
 
 .saas-faq-q-text {
-  font-size: 16.5px;
+  font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
-  font-family: 'Inter', sans-serif;
+  color: var(--hv-navy);
   line-height: 1.35;
 }
 
 .saas-faq-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--hv-mist-light);
+  color: var(--hv-slate);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -897,12 +1513,12 @@
 }
 
 .saas-faq-card.open .saas-faq-icon {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--hv-lavender);
+  color: var(--hv-blue);
 }
 
 .chevron-arrow {
-  transition: transform 0.25s ease;
+  transition: transform 0.2s ease;
 }
 
 .chevron-arrow.rotate {
@@ -910,137 +1526,140 @@
 }
 
 .saas-faq-content {
-  padding: 0 26px 24px;
-  border-top: 1px solid #f1f5f9;
+  padding: 0 18px 16px;
+  border-top: 1px solid var(--hv-mist-light);
 }
 
 .saas-faq-content p {
-  font-size: 14.5px;
-  line-height: 1.7;
-  color: #475569;
-  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--hv-slate);
+  margin: 12px 0 0;
 }
 
 /* ==========================================================================
-   7. Call-to-Action Banner Section
+   8. Striking Final Call to Action Section (Dark Navy)
    ========================================================================== */
 
 .saas-cta-section {
-  background: #ffffff;
-  padding: 88px 0 100px;
+  background: var(--hv-white);
+  padding: 56px 0 64px;
 }
 
 .saas-cta-card {
-  background: linear-gradient(135deg, #0b1329 0%, #1e3a8a 50%, #2563eb 100%);
-  color: #ffffff;
-  border-radius: 24px;
-  padding: 80px 48px;
+  background: var(--hv-navy);
+  color: var(--hv-white);
+  border-radius: var(--hv-radius-lg);
+  padding: 44px 32px;
   text-align: center;
-  box-shadow: 0 25px 60px -15px rgba(30, 58, 138, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  box-shadow: 0 20px 48px -8px rgba(16, 24, 40, 0.35);
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .saas-cta-card::before {
   content: '';
   position: absolute;
-  top: -40%;
-  right: -15%;
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(96, 165, 250, 0.28) 0%, transparent 70%);
-  filter: blur(55px);
+  top: -60%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(54, 92, 245, 0.25) 0%, transparent 70%);
+  filter: blur(60px);
   pointer-events: none;
 }
 
 .saas-cta-card::after {
   content: '';
   position: absolute;
-  bottom: -40%;
-  left: -10%;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(147, 197, 253, 0.2) 0%, transparent 70%);
-  filter: blur(45px);
+  bottom: -60%;
+  left: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(129, 140, 248, 0.18) 0%, transparent 70%);
+  filter: blur(60px);
   pointer-events: none;
 }
 
-.saas-cta-badge {
+.saas-cta-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #D6BBFB;
+  padding: 4px 12px;
   border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 22px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
   backdrop-filter: blur(8px);
 }
 
 .saas-cta-heading {
-  font-size: 42px;
+  font-size: clamp(28px, 2.8vw, 36px);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--hv-white);
   letter-spacing: -0.03em;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   font-family: 'Manrope', 'Inter', sans-serif;
   line-height: 1.15;
 }
 
 .saas-cta-description {
-  font-size: 17.5px;
-  color: #dbeafe;
-  line-height: 1.6;
-  max-width: 600px;
-  margin: 0 auto 36px;
+  font-size: 15px;
+  color: #98A2B3;
+  line-height: 1.55;
+  max-width: 580px;
+  margin: 0 auto 24px;
 }
 
 .saas-cta-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
   position: relative;
   z-index: 2;
 }
 
 /* ==========================================================================
-   8. Professional Footer
+   9. Complete Polished Footer
    ========================================================================== */
 
 .saas-footer {
-  background: #080d1a;
-  color: #94a3b8;
-  padding: 72px 0 0;
-  font-size: 14px;
+  background: var(--hv-navy);
+  color: #98A2B3;
+  padding: 48px 0 0;
+  font-size: 13.5px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .saas-footer-main {
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1.2fr;
-  gap: 48px;
-  padding-bottom: 56px;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: 36px;
+  padding-bottom: 36px;
 }
 
 .saas-brand-footer strong {
-  color: #ffffff;
+  color: var(--hv-white);
 }
 
 .saas-brand-footer small {
-  color: #94a3b8;
+  color: #98A2B3;
 }
 
 .saas-footer-desc {
-  font-size: 13.5px;
-  line-height: 1.65;
-  color: #94a3b8;
-  margin: 16px 0 20px;
-  max-width: 380px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #98A2B3;
+  margin: 12px 0 16px;
+  max-width: 360px;
 }
 
 .saas-footer-badge {
@@ -1048,81 +1667,83 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #7CD4FD;
+  background: rgba(124, 212, 253, 0.08);
+  border: 1px solid rgba(124, 212, 253, 0.18);
   padding: 5px 12px;
   border-radius: 6px;
 }
 
 .saas-footer-links-col h4 {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--hv-white);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 20px;
+  letter-spacing: 0.08em;
+  margin: 0 0 14px;
 }
 
 .saas-footer-links-col ul {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
 .saas-footer-links-col a {
   text-decoration: none;
-  color: #94a3b8;
+  color: #98A2B3;
   font-size: 13.5px;
   transition: color 0.15s ease;
 }
 
 .saas-footer-links-col a:hover {
-  color: #ffffff;
+  color: var(--hv-white);
 }
 
 .footer-link-btn {
   background: transparent;
   border: 0;
   padding: 0;
-  color: #94a3b8;
+  color: #98A2B3;
   font-size: 13.5px;
   cursor: pointer;
   text-align: left;
   transition: color 0.15s ease;
+  font-family: inherit;
 }
 
 .footer-link-btn:hover {
-  color: #ffffff;
+  color: var(--hv-white);
 }
 
 .saas-footer-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
-  color: #cbd5e1;
+  color: #CBD5E1;
 }
 
 .status-dot-green {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background: var(--hv-green);
+  box-shadow: 0 0 8px var(--hv-green);
 }
 
 .saas-footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 26px 0;
+  padding: 18px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  font-size: 12.5px;
-  color: #64748b;
+  gap: 16px;
+  font-size: 12px;
+  color: #667085;
   flex-wrap: wrap;
 }
 
@@ -1138,18 +1759,18 @@
 
 .saas-footer-bottom-links em {
   font-style: normal;
-  color: #475569;
+  color: #475467;
 }
 
 /* ==========================================================================
-   9. Informational Modal Dialog
+   10. Informational Modal Dialog
    ========================================================================== */
 
 .saas-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(16, 24, 40, 0.7);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: grid;
@@ -1159,16 +1780,16 @@
 
 .saas-modal-card {
   width: min(540px, 100%);
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
-  border: 1px solid #e2e8f0;
+  background: var(--hv-white);
+  border-radius: var(--hv-radius-lg);
+  box-shadow: var(--hv-shadow-floating);
+  border: 1px solid var(--hv-mist);
   overflow: hidden;
 }
 
 .saas-modal-head {
   padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--hv-mist);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1178,54 +1799,69 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--hv-navy);
 }
 
 .saas-modal-close {
   background: transparent;
   border: 0;
-  color: #64748b;
+  color: var(--hv-slate);
   cursor: pointer;
   padding: 6px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--hv-radius-sm);
   transition: all 0.15s ease;
 }
 
 .saas-modal-close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--hv-mist-light);
+  color: var(--hv-navy);
 }
 
 .saas-modal-body {
   padding: 24px;
   font-size: 14px;
   line-height: 1.65;
-  color: #475569;
-  display: grid;
+  color: var(--hv-slate-dark);
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
 .saas-modal-foot {
   padding: 16px 24px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--hv-offwhite);
+  border-top: 1px solid var(--hv-mist);
   display: flex;
   justify-content: flex-end;
 }
 
 /* ==========================================================================
-   10. Responsive Breakpoints
+   11. Responsive Breakpoints
    ========================================================================== */
 
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
+  .saas-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .saas-hero-copy {
+    text-align: center;
+    align-items: center;
+  }
+  .saas-hero-title {
+    max-width: 650px;
+  }
+  .saas-hero-actions {
+    justify-content: center;
+  }
   .saas-features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .saas-about-grid {
+  .saas-explain-grid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 36px;
   }
   .saas-footer-main {
     grid-template-columns: 1.5fr 1fr 1fr;
@@ -1242,84 +1878,97 @@
   .saas-mobile-menu {
     display: block;
   }
-  .saas-hero-proof {
-    border-radius: 16px;
-    padding: 16px 20px;
-    justify-content: center;
-    gap: 12px 24px;
+  .saas-value-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .saas-value-item::after {
+    display: none !important;
+  }
+  .saas-workflow-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .saas-workflow-line {
+    display: none;
   }
 }
 
 @media (max-width: 768px) {
   .saas-hero-section {
-    padding: 64px 0 52px;
-  }
-  .saas-hero-title {
-    font-size: 38px;
-    line-height: 1.15;
-  }
-  .saas-hero-subtitle {
-    font-size: 16px;
-    margin-bottom: 28px;
-    max-width: 540px;
+    padding: 36px 0 28px;
   }
   .saas-section {
-    padding: 64px 0;
+    padding: 44px 0;
   }
-  .saas-section-title {
-    font-size: 30px;
-  }
-  .saas-about-heading {
-    font-size: 28px;
-  }
-  .saas-cta-heading {
-    font-size: 30px;
+  .saas-section-header {
+    margin: 0 auto 28px;
   }
   .saas-cta-card {
-    padding: 56px 24px;
-    border-radius: 20px;
-  }
-  .saas-workflow-grid {
-    grid-template-columns: 1fr;
-    gap: 18px;
+    padding: 36px 20px;
   }
   .saas-features-grid {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 14px;
   }
   .saas-footer-main {
     grid-template-columns: 1fr;
-    gap: 36px;
+    gap: 28px;
+  }
+  .mockup-floating-badge {
+    position: static;
+    margin-top: 10px;
+    animation: none;
+    max-width: 100%;
+  }
+  .mockup-floating-pill {
+    display: none;
   }
 }
 
-@media (max-width: 560px) {
-  .saas-hero-title {
-    font-size: 30px;
-    line-height: 1.2;
+@media (max-width: 540px) {
+  .saas-container {
+    padding: 0 16px;
   }
-  .saas-hero-subtitle {
-    font-size: 14.5px;
-    line-height: 1.6;
+  .saas-hero-title {
+    font-size: 28px;
   }
   .saas-hero-actions {
     flex-direction: column;
     width: 100%;
-    gap: 12px;
   }
   .saas-hero-actions .saas-btn {
     width: 100%;
   }
-  .saas-hero-proof {
-    display: flex;
+  .saas-hero-support-line {
     flex-direction: column;
-    align-items: flex-start;
+    gap: 4px;
+    text-align: center;
+  }
+  .saas-value-grid {
+    grid-template-columns: 1fr;
+  }
+  .mockup-metrics-row {
+    grid-template-columns: 1fr;
+  }
+  .mockup-header-action {
+    display: none;
+  }
+  .saas-cta-actions {
+    flex-direction: column;
     width: 100%;
-    margin: 0 auto;
-    border-radius: 14px;
-    gap: 12px;
   }
   .saas-cta-actions .saas-btn {
     width: 100%;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

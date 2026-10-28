@@ -31,8 +31,11 @@ client.interceptors.response.use(
       localStorage.removeItem('hireverse_token')
       localStorage.removeItem('hireverse_user')
     }
-    const message = res?.data?.message || error.message || 'Network request failed'
-    return Promise.reject(new Error(message))
+    const message = res?.data?.message || (res ? error.message : 'Unable to connect to the server. Please check your connection.')
+    const err = new Error(message)
+    err.status = res?.status
+    err.isNetworkError = !res
+    return Promise.reject(err)
   }
 )
 
@@ -40,11 +43,11 @@ export const api = {
   // Authentication
   auth: {
     login: (credentials) => client.post('/auth/login', credentials),
+    sendRegistrationOtp: (data) => client.post('/auth/send-otp', data),
+    verifyOtp: (data) => client.post('/auth/verify-otp', data),
     register: (userData) => client.post('/auth/register', userData),
     getMe: () => client.get('/auth/me'),
-    logout: () => client.post('/auth/logout'),
-    forgotPassword: (email) => client.post('/auth/forgot-password', { email }),
-    resetPassword: (token, newPassword) => client.post('/auth/reset-password', { token, newPassword })
+    logout: () => client.post('/auth/logout')
   },
 
   // Users & Students
@@ -53,6 +56,7 @@ export const api = {
     updateProfile: (data) => client.patch('/users/me', data),
     updatePassword: (passwords) => client.patch('/users/me/password', passwords),
     setTarget: (companyId, role) => client.patch('/users/me/target', { companyId, role }),
+    deleteAccount: (password) => client.delete('/users/me', { data: { password } }),
     getStudents: (params) => client.get('/users/students', { params }),
     getStudentById: (id) => client.get(`/users/students/${id}`)
   },

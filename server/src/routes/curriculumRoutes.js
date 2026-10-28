@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/authenticate.js'
 import Company from '../models/Company.js'
 import User from '../models/User.js'
 import { Roadmap } from '../models/Roadmap.js'
+import { isPhaseUnlocked } from '../controllers/roadmapController.js'
 import { getCurriculumForCompany, COMPANY_CURRICULUM } from '../services/curriculumService.js'
 
 const router = Router()
@@ -121,6 +122,30 @@ router.patch('/toggle-topic', authenticate, async (req, res) => {
     const user = await User.findById(req.user._id).populate('targetCompany')
     const activeCompanyId = paramCompanyId || user.targetCompany?._id || user.targetCompany
     const activeRole = paramRole || user.currentTargetRole || 'Software Engineer'
+
+    // Check if task belongs to a locked roadmap round and enforce sequential unlocking
+    let roadmap = null
+    if (activeCompanyId) {
+      roadmap = await Roadmap.findOne({ user: user._id, company: activeCompanyId })
+      if (roadmap) {
+        const containingPhases = []
+        roadmap.phases.forEach((phase, idx) => {
+          if (phase.tasks.some(t => t.taskId === topicId)) {
+            containingPhases.push({ phase, idx })
+          }
+        })
+        if (containingPhases.length > 0) {
+          const isAnyUnlocked = containingPhases.some(({ idx }) => isPhaseUnlocked(idx, roadmap.phases))
+          if (!isAnyUnlocked) {
+            const lockedNums = containingPhases.map(({ idx }) => idx + 1).join(', ')
+            return res.status(400).json({
+              success: false,
+              message: `Cannot update topic. Stage ${lockedNums} in your preparation roadmap is locked. Complete all required topics in prerequisite stages first.`
+            })
+          }
+        }
+      }
+    }
 
     if (!user.targetProgress) {
       user.targetProgress = []

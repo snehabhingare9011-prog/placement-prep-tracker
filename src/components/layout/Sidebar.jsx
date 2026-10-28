@@ -21,7 +21,7 @@ export function Sidebar({ mobileOpen, closeMobile }) {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/login')
+    navigate('/')
   }
 
   const isStaff = user?.role === 'placement_officer' || user?.role === 'faculty' || user?.role === 'admin'

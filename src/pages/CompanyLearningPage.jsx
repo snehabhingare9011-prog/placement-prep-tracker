@@ -3,7 +3,6 @@ import { useSearchParams, Link } from 'react-router-dom'
 import {
   Building2,
   CheckCircle2,
-  Circle,
   ExternalLink,
   Video as YoutubeIcon,
   Globe,
@@ -47,7 +46,6 @@ export function CompanyLearningPage() {
   const [activePillar, setActivePillar] = useState('All')
   const [selectedResourceTopic, setSelectedResourceTopic] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [updatingTopicId, setUpdatingTopicId] = useState(null)
 
   const activeUserTargetId = user?.targetCompany?._id || user?.targetCompany
   const activeUserRole = user?.currentTargetRole || 'Software Engineer'
@@ -164,26 +162,6 @@ export function CompanyLearningPage() {
     }
     setSelectedRoles(updated)
     api.curriculum.updateRoles(updated).catch(() => {})
-  }
-
-  // Toggle topic completion scoped to company
-  const handleToggleTopic = async (topicId) => {
-    setUpdatingTopicId(topicId)
-    try {
-      const role = selectedRoles[0] || activeUserRole
-      const res = await api.curriculum.toggleTopic(topicId, selectedCompanyId, role)
-      if (res.success) {
-        setCompletedTopicIds(res.completedTopics || [])
-        showToast(
-          res.isCompleted ? 'Topic marked as completed! 🎉' : 'Topic marked as incomplete',
-          'success'
-        )
-      }
-    } catch (err) {
-      showToast(err.message, 'danger')
-    } finally {
-      setUpdatingTopicId(null)
-    }
   }
 
   // Filter topics based on active pillar and selected roles
@@ -393,7 +371,6 @@ export function CompanyLearningPage() {
         <div className="topics-checklist-grid">
           {filteredTopics.map(topic => {
             const isCompleted = completedTopicIds.includes(topic.id)
-            const isToggling = updatingTopicId === topic.id
             const isNextUp = nextIncompleteTopic?.id === topic.id
 
             return (
@@ -403,19 +380,23 @@ export function CompanyLearningPage() {
                 style={isNextUp && !isCompleted ? { borderColor: '#93c5fd', boxShadow: '0 0 0 1px #bfdbfe' } : {}}
               >
                 <div className="topic-card-header">
-                  <button
-                    type="button"
-                    className={`topic-checkbox-btn ${isCompleted ? 'checked' : ''}`}
-                    onClick={() => handleToggleTopic(topic.id)}
-                    disabled={isToggling}
-                    title={isCompleted ? 'Click to uncheck (mark as incomplete)' : 'Click to mark as completed'}
+                  <div
+                    className={`topic-checkbox-indicator ${isCompleted ? 'checked' : ''}`}
+                    title={isCompleted ? 'Completed on Roadmap' : 'Topic Guide'}
+                    style={{
+                      marginTop: '2px',
+                      flexShrink: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      cursor: 'default'
+                    }}
                   >
                     {isCompleted ? (
                       <CheckCircle2 size={22} className="check-icon-active" />
                     ) : (
-                      <Circle size={22} className="check-icon-empty" />
+                      <BookOpen size={20} className="topic-neutral-icon" style={{ color: '#94a3b8' }} />
                     )}
-                  </button>
+                  </div>
 
                   <div className="topic-title-area">
                     <div className="topic-tag-row">
@@ -487,16 +468,6 @@ export function CompanyLearningPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      className="button secondary"
-                      onClick={() => handleToggleTopic(topic.id)}
-                      disabled={isToggling}
-                      style={{ fontSize: '11px', padding: '5px 9px' }}
-                    >
-                      {isCompleted ? 'Uncheck' : 'Mark Completed'}
-                    </button>
-
                     <button
                       type="button"
                       className="button secondary view-resources-btn"
@@ -648,10 +619,10 @@ export function CompanyLearningPage() {
               borderRadius: '6px',
               border: '1px solid #e2e8f0'
             }}>
-              <strong>Note:</strong> Opening this topic or external resources does not automatically mark it as completed. Use the button below to update your completion status when you are ready.
+              <strong>Note:</strong> Preparation Hub is for studying and reference. To update topic completion and unlock sequential stages, mark your progress on your <Link to="/roadmap" style={{ color: '#2563eb', fontWeight: 600 }}>Full Roadmap</Link>.
             </p>
 
-            {/* Modal Action Footer: Explicit Toggle */}
+            {/* Modal Action Footer: Display-only Status & Close */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -662,21 +633,17 @@ export function CompanyLearningPage() {
               flexWrap: 'wrap',
               gap: '10px'
             }}>
-              <button
-                type="button"
-                className={`button ${completedTopicIds.includes(selectedResourceTopic.id) ? 'secondary' : 'primary'}`}
-                onClick={() => handleToggleTopic(selectedResourceTopic.id)}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {completedTopicIds.includes(selectedResourceTopic.id) ? (
-                  <>
-                    <CheckCircle2 size={15} color="#16a34a" /> Marked Completed (Click to Uncheck)
-                  </>
+                  <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}>
+                    <CheckCircle2 size={16} /> Completed on Roadmap
+                  </span>
                 ) : (
-                  <>
-                    <Check size={15} /> Mark Topic as Completed
-                  </>
+                  <span style={{ color: '#64748b', fontSize: '12px' }}>
+                    Status: Incomplete · <Link to="/roadmap" style={{ color: '#2563eb', fontWeight: 600 }}>Mark on Roadmap</Link>
+                  </span>
                 )}
-              </button>
+              </div>
 
               <button
                 type="button"

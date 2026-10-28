@@ -4,6 +4,9 @@ import { Company } from '../models/Company.js'
 import { Roadmap } from '../models/Roadmap.js'
 import { PracticeAttempt } from '../models/PracticeAttempt.js'
 import { TestAttempt } from '../models/TestAttempt.js'
+import { SavedQuestion } from '../models/SavedQuestion.js'
+import { PlacementDrive } from '../models/PlacementDrive.js'
+import { Otp } from '../models/Otp.js'
 
 // @desc Get current user profile
 // @route GET /api/v1/users/me
@@ -267,6 +270,59 @@ export async function getStudentById(req, res, next) {
       },
       recentTests: testAttempts.slice(0, 5),
       recentPractice: practiceAttempts.slice(0, 10)
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// @desc Delete current user account and user-owned data
+// @route DELETE /api/v1/users/me
+// @access Private
+export async function deleteAccount(req, res, next) {
+  try {
+    const { password } = req.body
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your account password to confirm deletion.'
+      })
+    }
+
+    const userId = req.user._id
+    const user = await User.findById(userId).select('+password')
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found.'
+      })
+    }
+
+    const isMatch = await user.matchPassword(password)
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password. Account deletion cancelled for your security.'
+      })
+    }
+
+    // Clean up all user-owned records
+    await Promise.all([
+      ActivityLog.deleteMany({ user: userId }),
+      PracticeAttempt.deleteMany({ user: userId }),
+      SavedQuestion.deleteMany({ user: userId }),
+      TestAttempt.deleteMany({ user: userId }),
+      Roadmap.deleteMany({ user: userId }),
+      PlacementDrive.updateMany({}, { $pull: { applications: { student: userId } } }),
+      Otp.deleteMany({ email: user.email }),
+      User.findByIdAndDelete(userId)
+    ])
+
+    res.json({
+      success: true,
+      message: 'Your account and all associated preparation data have been permanently deleted.'
     })
   } catch (error) {
     next(error)

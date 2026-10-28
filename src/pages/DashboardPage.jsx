@@ -18,7 +18,6 @@ import {
   Sparkles,
   ExternalLink,
   Milestone,
-  ShieldCheck,
   TrendingUp
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -317,16 +316,9 @@ export function DashboardPage() {
             marginBottom: '18px'
           }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
-                  PLACEMENT READINESS SCORE
-                </span>
-                {readinessData?.hasEnoughData && (
-                  <span className={`status-pill ${readinessData?.hasMockTestData ? 'good' : 'attention'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                    {readinessData.statusLabel}
-                  </span>
-                )}
-              </div>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', letterSpacing: '0.6px', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                PLACEMENT READINESS SCORE
+              </span>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '2px 0 0' }}>
                 Where You Stand for {activeCo.name} ({currentRole})
               </h2>
@@ -345,12 +337,11 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Three Separate, Clearly Explained Metrics */}
+          {/* Two Key Preparation Metrics Side by Side */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '16px',
-            marginBottom: '16px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '16px'
           }}>
             {/* Metric 1: Preparation Progress (Syllabus Coverage) */}
             <div style={{
@@ -435,105 +426,6 @@ export function DashboardPage() {
                   : 'Take a target mock assessment to establish your verified exam benchmark.'}
               </p>
             </div>
-
-            {/* Metric 3: Overall Placement Readiness */}
-            <div style={{
-              background: readinessData?.hasMockTestData ? '#f0fdf4' : '#eff6ff',
-              border: `1px solid ${readinessData?.hasMockTestData ? '#bbf7d0' : '#bfdbfe'}`,
-              borderRadius: '10px',
-              padding: '16px 18px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: readinessData?.hasMockTestData ? '#166534' : '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  3. Combined Readiness Score
-                </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '8px 0 6px' }}>
-                  {readinessData?.hasMockTestData ? (
-                    <>
-                      <strong style={{ fontSize: '26px', fontWeight: 800, color: '#166534' }}>
-                        {readinessData.overallScore}
-                      </strong>
-                      <span style={{ fontSize: '13px', color: '#166534', fontWeight: 600 }}>/ 100</span>
-                    </>
-                  ) : (
-                    <>
-                      <strong style={{ fontSize: '22px', fontWeight: 800, color: '#1e40af' }}>
-                        {progressPercent}%
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#1e40af', fontWeight: 500 }}>Syllabus Only</span>
-                    </>
-                  )}
-                </div>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: readinessData?.hasMockTestData ? '#15803d' : '#2563eb' }}>
-                  Status: {readinessData?.statusLabel || 'Awaiting Assessment'}
-                </div>
-              </div>
-              <p style={{ margin: '10px 0 0', fontSize: '11px', color: readinessData?.hasMockTestData ? '#166534' : '#1e40af', lineHeight: 1.4 }}>
-                {readinessData?.formulaExplanation || 'Calculated from 50% Syllabus Topics + 50% Mock-Test Performance.'}
-              </p>
-            </div>
-          </div>
-
-          {/* Round-Wise Readiness (Only shown when verified company rounds exist) */}
-          {readinessData?.roundReadiness && readinessData.roundReadiness.length > 0 && (
-            <div style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              marginBottom: '14px'
-            }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
-                Recruitment Round Readiness for {activeCo.name}
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-                {readinessData.roundReadiness.map((rnd, idx) => (
-                  <div key={idx} style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '10px'
-                  }}>
-                    <div>
-                      <strong style={{ fontSize: '12px', color: '#0f172a', display: 'block' }}>
-                        Round {rnd.roundNumber}: {rnd.name}
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>
-                        {rnd.detail}
-                      </span>
-                    </div>
-                    <span className={`status-pill ${rnd.status === 'Completed' ? 'good' : (rnd.status === 'In Progress' ? 'attention' : 'pending')}`} style={{ fontSize: '10px', padding: '2px 6px', flexShrink: 0 }}>
-                      {rnd.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Transparent Calculation Note */}
-          <div style={{
-            background: '#ffffff',
-            border: '1px dashed #cbd5e1',
-            borderRadius: '6px',
-            padding: '8px 12px',
-            fontSize: '11px',
-            color: '#64748b',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <ShieldCheck size={14} color="#2563eb" style={{ flexShrink: 0 }} />
-            <span>
-              <b>Transparent Logic:</b> HireVerse readiness scores are never guessed or simulated. They combine verified topic checklists (50%) and actual submitted mock assessment scores (50%). No arbitrary selection predictions or artificial odds.
-            </span>
           </div>
         </section>
       )}

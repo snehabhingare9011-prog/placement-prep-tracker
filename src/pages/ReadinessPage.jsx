@@ -392,49 +392,42 @@ export function ReadinessPage() {
 
           {/* Overall Accuracy Card with Circular Blue Donut Progress Indicator */}
           <div className="overall-accuracy-card">
-            <div style={{ width: '104px', height: '104px', flexShrink: 0, position: 'relative', display: 'grid', placeItems: 'center' }}>
-              <svg width="104" height="104" viewBox="0 0 104 104" style={{ overflow: 'visible' }}>
+            <div className="accuracy-donut-wrap">
+              <svg viewBox="0 0 160 160" className="accuracy-donut-svg">
                 <circle
-                  cx="52"
-                  cy="52"
-                  r="42"
+                  cx="80"
+                  cy="80"
+                  r="65"
                   fill="transparent"
-                  stroke="#e2e8f0"
-                  strokeWidth="8.5"
+                  strokeWidth="12.5"
+                  className="accuracy-donut-bg"
                 />
                 <circle
-                  cx="52"
-                  cy="52"
-                  r="42"
+                  cx="80"
+                  cy="80"
+                  r="65"
                   fill="transparent"
-                  stroke={overallAccuracy === 100 ? '#16a34a' : '#2563eb'}
-                  strokeWidth="8.5"
-                  strokeDasharray="263.89"
-                  strokeDashoffset={overallAccuracy !== null ? 263.89 - (263.89 * Math.min(100, Math.max(0, overallAccuracy))) / 100 : 263.89}
-                  strokeLinecap="round"
-                  transform="rotate(-90 52 52)"
-                  style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                  strokeWidth="12.5"
+                  strokeDasharray="408.41"
+                  strokeDashoffset={overallAccuracy !== null ? 408.41 - (408.41 * Math.min(100, Math.max(0, overallAccuracy))) / 100 : 408.41}
+                  transform="rotate(-90 80 80)"
+                  className={`accuracy-donut-progress ${overallAccuracy === 100 ? 'green-ring' : 'blue-ring'}`}
                 />
                 <text
-                  x="52"
-                  y="48"
+                  x="80"
+                  y="74"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize="21"
-                  fontWeight="800"
-                  fill="#0f172a"
+                  className="accuracy-donut-val"
                 >
                   {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
                 </text>
                 <text
-                  x="52"
-                  y="65"
+                  x="80"
+                  y="99"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize="9.5"
-                  fontWeight="700"
-                  fill="#64748b"
-                  letterSpacing="0.4"
+                  className="accuracy-donut-sub"
                 >
                   ACCURACY
                 </text>
@@ -445,12 +438,31 @@ export function ReadinessPage() {
               <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '3px' }}>
                 OVERALL ACCURACY
               </span>
-              <strong style={{ fontSize: '24px', fontWeight: 800, color: '#2563eb', display: 'block', marginBottom: '3px' }}>
-                {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
-              </strong>
-              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
-                {overallAccuracy !== null ? 'Across latest attempts' : 'No tests attempted yet'}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '24px', fontWeight: 800, color: '#2563eb', lineHeight: 1.1 }}>
+                  {overallAccuracy !== null ? `${overallAccuracy}%` : 'N/A'}
+                </strong>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  {overallAccuracy !== null ? 'Across latest attempts' : 'No tests attempted yet'}
+                </span>
+              </div>
+              <div
+                className="overall-accuracy-formula"
+                title="Overall Accuracy (%) = (Total Correct Answers ÷ Total Attempted Questions) × 100"
+                aria-label="Formula: Overall Accuracy (%) = (Total Correct Answers ÷ Total Attempted Questions) × 100"
+              >
+                <span className="formula-lhs">Overall Accuracy (%)</span>
+                <span className="formula-op">=</span>
+                <span className="formula-group">
+                  <span className="formula-paren">(</span>
+                  <span className="formula-term">Total Correct Answers</span>
+                  <span className="formula-op">÷</span>
+                  <span className="formula-term">Total Attempted Questions</span>
+                  <span className="formula-paren">)</span>
+                </span>
+                <span className="formula-op">×</span>
+                <span className="formula-factor">100</span>
+              </div>
             </div>
           </div>
 
